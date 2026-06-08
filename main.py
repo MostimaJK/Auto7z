@@ -392,7 +392,7 @@ class AutoExtractorWidget(QWidget):
         layout.setContentsMargins(35, 30, 35, 30)
         layout.setSpacing(14)
 
-        title_label = SubtitleLabel("多層壓縮包一鍵遞歸解壓 (實時進度可視化)", self)
+        title_label = SubtitleLabel("多層壓縮包一鍵遞歸解壓", self)
         title_label.setStyleSheet("font-size: 20px; font-weight: 600; color: #202020;")
         layout.addWidget(title_label)
 

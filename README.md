@@ -35,6 +35,20 @@ pip install "PyQt-Fluent-Widgets[full]" -i https://pypi.org/simple/
 python main.py
 ```
 
+## DEMO
+
+一鍵修改文件擴展名，支持拖入文件和批量處理。
+
+![01](DEMO/01.png)
+
+多層壓縮包一鍵遞歸解壓，能夠自動將多層壓縮包解壓到底，並將多餘的壓縮包刪除。同時，能夠自動匹配正確的密碼。
+
+![02](DEMO/02.png)
+
+一鍵還原文件後綴並遞歸解壓，上面兩個功能的合併。
+
+![03](DEMO/03.png)
+
 ## 📦 程序打包 (Distribution)
 
 本項目已完全適應 `PyInstaller` 打包機制，根目錄內置 `ys.ico` 圖標。
