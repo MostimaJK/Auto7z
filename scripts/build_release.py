@@ -4,6 +4,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[1]
 parser=argparse.ArgumentParser();parser.add_argument('--version',default='6.1.0');args=parser.parse_args()
 release=root/'release';release.mkdir(exist_ok=True)
+subprocess.run([sys.executable,str(root/'scripts/collect_licenses.py')],check=True)
 for mode in ('onedir','onefile'):
     name='Auto7z' if mode=='onedir' else 'Auto7z-Single'
     command=[sys.executable,'-m','PyInstaller','--noconfirm','--clean','--windowed',f'--{mode}','--name',name,'--icon',str(root/'Auto7z.ico'),'--distpath',str(root/'dist'),'--workpath',str(root/'build'/mode),'--specpath',str(root/'build'),

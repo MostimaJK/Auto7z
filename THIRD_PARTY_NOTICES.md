@@ -2,6 +2,8 @@
 
 Auto7z 的公開原始碼與本次發布採用 GNU GPL v3（見 LICENSE）。
 
+- CPython：PSF 等授權，完整聲明見 licenses/Python.txt；https://www.python.org/downloads/source/ 。
+- 已安裝依賴的授權原文見 licenses/dependencies/。
 - PyQt5：GPL v3；https://www.riverbankcomputing.com/software/pyqt/ ，原始碼 https://pypi.org/project/PyQt5/#files
 - PyQt-Fluent-Widgets：GPL v3；https://github.com/zhiyiYo/PyQt-Fluent-Widgets
 - Qt 5：LGPL v3 / GPL；https://download.qt.io/archive/qt/5.15/ ，授權全文見 licenses。
