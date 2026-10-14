@@ -10,3 +10,7 @@ for distribution in importlib.metadata.distributions():
   if '.dist-info/' in str(file) and Path(file).name.lower().startswith(('license','copying','notice')):
    source=Path(distribution.locate_file(file));target=out/'dependencies'/name/Path(file)
    if source.is_file():target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source,target)
+
+for file in out.rglob("*"):
+ if file.is_file():
+  text=file.read_text(encoding="utf-8");file.write_text("\n".join(line.rstrip() for line in text.splitlines()).rstrip()+"\n",encoding="utf-8")
