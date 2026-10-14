@@ -1,0 +1,166 @@
+{
+  "portable": [
+    {
+      "exit_code": 0,
+      "seconds": 0.9580523999975412,
+      "result": {
+        "version": "6.1.0",
+        "status": "success",
+        "payload_correct": true,
+        "style": "apple",
+        "lazy_pages": true,
+        "translators": [
+          true,
+          true
+        ]
+      },
+      "fault": ""
+    },
+    {
+      "exit_code": 0,
+      "seconds": 0.9224231000043801,
+      "result": {
+        "version": "6.1.0",
+        "status": "success",
+        "payload_correct": true,
+        "style": "apple",
+        "lazy_pages": true,
+        "translators": [
+          true,
+          true
+        ]
+      },
+      "fault": ""
+    },
+    {
+      "exit_code": 0,
+      "seconds": 0.9077813999974751,
+      "result": {
+        "version": "6.1.0",
+        "status": "success",
+        "payload_correct": true,
+        "style": "apple",
+        "lazy_pages": true,
+        "translators": [
+          true,
+          true
+        ]
+      },
+      "fault": ""
+    },
+    {
+      "exit_code": 0,
+      "seconds": 0.8915109999943525,
+      "result": {
+        "version": "6.1.0",
+        "status": "success",
+        "payload_correct": true,
+        "style": "apple",
+        "lazy_pages": true,
+        "translators": [
+          true,
+          true
+        ]
+      },
+      "fault": ""
+    },
+    {
+      "exit_code": 0,
+      "seconds": 0.9136456999985967,
+      "result": {
+        "version": "6.1.0",
+        "status": "success",
+        "payload_correct": true,
+        "style": "apple",
+        "lazy_pages": true,
+        "translators": [
+          true,
+          true
+        ]
+      },
+      "fault": ""
+    }
+  ],
+  "single": [
+    {
+      "exit_code": 0,
+      "seconds": 2.0136930999942706,
+      "result": {
+        "version": "6.1.0",
+        "status": "success",
+        "payload_correct": true,
+        "style": "apple",
+        "lazy_pages": true,
+        "translators": [
+          true,
+          true
+        ]
+      },
+      "fault": ""
+    },
+    {
+      "exit_code": 0,
+      "seconds": 2.0047240999992937,
+      "result": {
+        "version": "6.1.0",
+        "status": "success",
+        "payload_correct": true,
+        "style": "apple",
+        "lazy_pages": true,
+        "translators": [
+          true,
+          true
+        ]
+      },
+      "fault": ""
+    },
+    {
+      "exit_code": 0,
+      "seconds": 2.0918218000006163,
+      "result": {
+        "version": "6.1.0",
+        "status": "success",
+        "payload_correct": true,
+        "style": "apple",
+        "lazy_pages": true,
+        "translators": [
+          true,
+          true
+        ]
+      },
+      "fault": ""
+    },
+    {
+      "exit_code": 0,
+      "seconds": 2.4848254000025918,
+      "result": {
+        "version": "6.1.0",
+        "status": "success",
+        "payload_correct": true,
+        "style": "apple",
+        "lazy_pages": true,
+        "translators": [
+          true,
+          true
+        ]
+      },
+      "fault": ""
+    },
+    {
+      "exit_code": 0,
+      "seconds": 2.0949094999959925,
+      "result": {
+        "version": "6.1.0",
+        "status": "success",
+        "payload_correct": true,
+        "style": "apple",
+        "lazy_pages": true,
+        "translators": [
+          true,
+          true
+        ]
+      },
+      "fault": ""
+    }
+  ]
+}
