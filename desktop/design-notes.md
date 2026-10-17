@@ -97,3 +97,20 @@ React／TypeScript → Tauri command → 獨立 Python JSON-lines 後台 → 原
 - 本輪打包版經原生選擇器批量加入3包：第二組候選密碼解開加密7z，繁體中文／空格ZIP解出第二層文檔，損壞ZIP明確失敗（2成功／1失敗）。已讀取實際輸出文檔核對內容，舊結果保留於原目錄。日誌顯示候選序號而不記錄密碼內容。截圖 element-real-results.png、element-logs.png、element-settings.png。
 - 深色與原生標題欄、640×480短窗口、1280×960宿主搭配200% WebView（約640×480 CSS面積）已檢查：模式、密碼與底部操作可見。此為WebView放大，未做跨實體高DPI顯示器切換。截圖 element-short-dark.png、element-200-percent.png。
 - 待擴充：本輪未重跑大型真實取消與跨顯示器DPI測試；先前真實取消結果見歷史記錄。前端整庫引入保留Vite大chunk提示，功能建置通過，後續可按需拆分。
+
+# 液態玻璃選擇器與真實進度（2026-10-18，增量修訂）
+
+保持已認可的 Element Plus 工作區、常駐密碼、日誌與設定頁。僅改三種模式選擇器和底部解壓進度；依 uiux-product-designer v2.7.0 的 Apple 與進度指引實作。
+
+- 選擇器仍為 Element Plus RadioGroup／RadioButton，保留單選、方向鍵與焦點語義。以共同膠囊軌道、半透明透鏡、內側高光與邊緣陰影表現玻璃；選中層460ms滑動，內層550ms輕微形變，按壓放大及指標位置高光。是 Apple Liquid Glass 的 WebView 視覺改編，並非原生 Apple API 或真實光學折射。
+- 僅選擇器有彈性動效；進度依最新量測直接更新。支援淺／深色，減少動態、減少透明及強制色彩的CSS後備。
+- 現有7-Zip指令原已帶-bsp1。新增獨立讀取句柄即時解析其回報，避免移動子進程輸出的共用檔案位置，診斷仍在磁碟暫存且記憶體有界。每次密碼／工具／內層包先重設為未知；WinRAR不猜百分比。
+- 進度標示目前壓縮包的本次嘗試，與本輪已處理文件數分開；不宣稱精確位元組數、不估計剩餘時間，不以引擎100%宣告整批或所有內層成功。
+- 核心15項、橋接15項測試通過；另跑全Python測試（含原UI／progress）通過。真實7-Zip測試包含百分比事件；分段／異常百分比測試使用明確標示的合成輸出子進程。
+- 原生窗口實際解壓100.1MB／12,000文件ZIP，已捕獲87%～89%進度並成功完成，磁碟輸出文件數核對為12,000（artifacts/liquid-real-progress.png）。
+- 另在真實ZIP回報10%時自動取消，採樣[0,2,5,7,10]；後台回到cancelled，無任務暫存目錄，先前成功結果保留（artifacts/liquid-real-cancel.log）。此為真實核心取消驗證，並非原生取消按鈕時延基準。
+- 原生已檢查640×480兩個解壓模式的玻璃控件、常駐密碼、模式後綴輸入及底部操作；切換前後快照確認選中層位置改變。跨實體DPI顯示器未另測。
+- 回退分支為codex/element-plus-desktop；本輪codex/liquid-glass-progress。本機前一Element二進位另保留target/release/auto7z-element-before-liquid.exe，與同級resources一同使用。未推送或發布。
+
+官方方向參考：https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass
+- 深色短窗口實測方向鍵Right由遞迴解壓切換至修改後綴，玻璃選中層與上下文表單同步，焦點環可見；檢查後主題恢復跟隨系統。

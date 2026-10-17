@@ -75,6 +75,7 @@ class Bridge:
         self.completed = self.total = 0
         self.current = None
         self.stopping = False
+        self.progress = None
         self.scan_cancel = threading.Event()
 
     @staticmethod
@@ -103,7 +104,7 @@ class Bridge:
         with self.lock:
             return dict(rows=[dict(r) for r in self.rows], busy=self.busy, scanning=self.scanning,
                         activity=self.activity, current=self.current, stopping=self.stopping,
-                        completed=self.completed, total=self.total)
+                        completed=self.completed, total=self.total, progress=self.progress)
 
     def publish(self):
         self.emit(dict(event="state", data=self.state()))
@@ -116,6 +117,11 @@ class Bridge:
             self.activity = text
         self.emit(dict(event="activity", data=text))
         self.log(text)
+
+    def report_progress(self, data):
+        with self.lock:
+            self.progress = data
+        self.emit(dict(event="progress", data=data))
 
     def idle(self):
         if self.busy or self.scanning:
@@ -207,10 +213,11 @@ class Bridge:
         s = self.settings.copy()
         self.engine = Engine(s["path_7z"], s["path_rar"], passwords or [], engine_mode,
                              s["max_recursion_depth"], s["delete_after_extract"],
-                             s["idle_timeout_seconds"], s["timeout_7z_precheck"], self.notify)
+                             s["idle_timeout_seconds"], s["timeout_7z_precheck"], self.notify, self.report_progress)
         if mode != "rename" and not self.engine._tool_order(Path(sources[0]["source"])):
             raise ValueError("找不到可用解壓引擎，請在設定中指定工具路徑")
         self.busy, self.stopping = True, False
+        self.progress = None
         self.completed, self.total = 0, len(sources)
         self.publish()
         def run():
@@ -221,6 +228,7 @@ class Bridge:
                     with self.lock:
                         row["status"] = "running"
                         self.current = row["id"]
+                        self.progress = None
                     self.publish()
                     # On partial/cancelled restore, the renamed archive remains the retry source.
                     source = row["archive"] or row["source"]

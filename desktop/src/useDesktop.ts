@@ -131,6 +131,7 @@ export function useDesktop() {
         if (disposed) return;
         if (event === 'state') { state.value = data; if (detail.value) detail.value = state.value.rows.find(r => r.id === detail.value?.id) || null; }
         if (event === 'activity') state.value.activity = data;
+        if (event === 'progress') state.value.progress = data;
         if (event === 'log') logs.value = [...logs.value.slice(-1999), `${new Date().toLocaleTimeString('zh-TW')}  ${data}`];
         if (event === 'error') error.value = data;
       });

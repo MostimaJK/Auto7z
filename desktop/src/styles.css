@@ -108,6 +108,13 @@ p { line-height: 1.6; }
 .status-title strong { font-weight: 600; overflow-wrap: anywhere; }
 .status-title > span { white-space: nowrap; }
 .activity { overflow-wrap: anywhere; }
+.extraction-progress { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.extraction-progress > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2563eb, #397ee8); box-shadow: 0 0 7px #397ee836; }
+.extraction-progress.is-unknown > span { width: 28%; animation: activity 1.8s linear infinite; }
+.progress-caption { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 13px; }
+.progress-caption > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.progress-caption > strong, .progress-caption > span:last-child { flex-shrink: 0; font-weight: 500; }
+html.dark .extraction-progress > span { background: linear-gradient(90deg, #7eb0ff, #79c3f0); }
 .unknown-progress { height: 3px; border-radius: 4px; background: var(--line); overflow: hidden; }
 .unknown-progress > span { display: block; height: 100%; width: 28%; border-radius: inherit; background: var(--el-color-primary); animation: activity 1.8s linear infinite; }
 @keyframes activity { from { transform: translateX(-100%); } to { transform: translateX(460%); } }

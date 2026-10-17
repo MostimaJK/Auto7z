@@ -2,6 +2,7 @@
 import zhTw from 'element-plus/es/locale/lang/zh-tw';
 import type { Row } from './api';
 import { useDesktop } from './useDesktop';
+import LiquidModeSwitch from './LiquidModeSwitch.vue';
 const { page, state, draft, tools, ready, working, error, settingError, logs, mode, extension, engineMode, passwords, filter, selected, detail, help, dragging, checkedTools, dark, busy, candidatePasswords, statuses, statusTypes, shown, counts, done, retry, canStart, useBundled, dirty, name, size, attempt, navigate, pick, remove, start, changeMode, browse, checkTools, saveSettings, resetDraft, toggleTheme, openResult, cancel, copyLogs } = useDesktop();
 </script>
 
@@ -21,11 +22,7 @@ const { page, state, draft, tools, ready, working, error, settingError, logs, mo
 
       <main v-show="page === 'work'" class="workspace-page">
         <section class="mode-toolbar" aria-label="處理方式">
-          <el-radio-group :model-value="mode" class="mode-switch" :disabled="busy" aria-label="處理方式" @update:model-value="changeMode">
-            <el-radio-button value="extract">遞迴解壓</el-radio-button>
-            <el-radio-button value="rename">修改後綴</el-radio-button>
-            <el-radio-button value="restore">改後綴並解壓</el-radio-button>
-          </el-radio-group>
+          <LiquidModeSwitch :model-value="mode" :disabled="busy" @update:model-value="changeMode" />
           <label v-if="mode !== 'extract'" class="inline-field"><span>目標後綴</span><el-input v-model="extension" aria-label="目標後綴" :disabled="busy" class="extension-input" /></label>
           <label v-if="mode !== 'rename'" class="inline-field engine-field"><span>引擎</span><el-select v-model="engineMode" aria-label="解壓引擎" :disabled="busy"><el-option label="自動選擇" value="auto" /><el-option label="7-Zip" value="7z" /><el-option label="WinRAR" value="winrar" /></el-select></label>
         </section>
@@ -55,7 +52,10 @@ const { page, state, draft, tools, ready, working, error, settingError, logs, mo
         </section>
 
         <footer class="task-footer">
-          <div class="task-status" role="status" aria-live="polite"><div class="status-title"><strong>{{ state.activity }}</strong><span v-if="state.total">本輪已處理 {{ state.completed }} / {{ state.total }}</span></div><template v-if="state.busy"><div class="unknown-progress" aria-label="目前文件活動，位元組進度未知"><span /></div><span class="muted activity">{{ name(state.rows.find(r => r.id === state.current)?.source || '') }} · 位元組進度未知</span></template><span v-else-if="done" class="muted">成功 {{ counts.success }} · 部分完成 {{ counts.partial }} · 失敗 {{ counts.failed }} · 取消 {{ counts.cancelled }}</span></div>
+          <div class="task-status"><div class="status-title" role="status"><strong>{{ state.activity }}</strong><span v-if="state.total">本輪已處理 {{ state.completed }} / {{ state.total }}</span></div><template v-if="state.busy">
+            <div class="extraction-progress" :class="{ 'is-unknown': state.progress?.percent == null }" role="progressbar" aria-label="目前壓縮包的本次解壓進度" :aria-valuenow="state.progress?.percent ?? undefined" :aria-valuemin="0" :aria-valuemax="100"><span :style="state.progress?.percent != null ? { width: `${state.progress.percent}%` } : undefined" /></div>
+            <div class="progress-caption"><span>目前壓縮包：{{ state.progress?.archive || name(state.rows.find(r => r.id === state.current)?.source || '') }}</span><strong v-if="state.progress?.percent != null">7-Zip 回報 {{ state.progress.percent }}%</strong><span v-else class="muted">{{ state.progress?.tool === 'winrar' ? 'WinRAR · 進度未知' : '預檢／等待引擎進度' }}</span></div>
+          </template><span v-else-if="done" class="muted">成功 {{ counts.success }} · 部分完成 {{ counts.partial }} · 失敗 {{ counts.failed }} · 取消 {{ counts.cancelled }}</span></div>
           <el-button v-if="state.busy || state.scanning" round :disabled="state.stopping || working" @click="cancel">{{ state.stopping ? '正在取消…' : '取消工作' }}</el-button>
           <el-button v-else type="primary" round :disabled="!ready || busy || !canStart" @click="start">{{ retry ? '重試未成功項目' : mode === 'rename' ? '修改後綴' : '開始解壓' }}</el-button>
         </footer>

@@ -33,6 +33,28 @@ class ExtractionTests(unittest.TestCase):
                 archive.writestr(key, value)
         return path
 
+    def test_real_7z_reports_attempt_progress_without_inventing_completion(self):
+        events = []
+        self.engine.progress = events.append
+        source = self.archive('progress.zip', {'data.txt': 'archive progress ' * 1000000})
+        result = self.engine.process(source)
+        self.assertEqual(result.status, 'success', result.detail)
+        self.assertIsNone(events[0]['percent'])
+        measured = [event for event in events if event['percent'] is not None]
+        self.assertTrue(measured, events)
+        self.assertTrue(all(0 <= event['percent'] <= 100 and event['archive'] == source.name and event['tool'] == '7z' for event in measured))
+        self.assertEqual((Path(result.output) / 'data.txt').stat().st_size, 17000000)
+
+    def test_progress_stream_handles_split_frames_and_out_of_range_values(self):
+        # Synthetic output protocol; real child process, not real extraction.
+        events = []
+        self.engine.progress = events.append
+        script = "import sys,time; sys.stdout.write('\\r 12'); sys.stdout.flush(); time.sleep(.12); sys.stdout.write('% done'); sys.stdout.flush(); time.sleep(.12); sys.stdout.write('\\r 999% bad\\r 42% done'); sys.stdout.flush(); time.sleep(.12)"
+        code, output = self.engine._run([sys.executable, '-c', script, '-bsp1'], self.folder)
+        self.assertEqual(code, 0)
+        self.assertEqual([event['percent'] for event in events], [12, 42])
+        self.assertIn('999%', output)
+
     def test_plain_unicode_output_and_existing_folder_preserved(self):
         archive = self.archive("中文 空格.zip", {"文檔.txt": "hello"})
         existing = archive.with_suffix("")

@@ -142,6 +142,16 @@ class BridgeTests(unittest.TestCase):
         self.assertEqual(checked, {'path_7z': True, 'path_rar': False})
         self.assertFalse(self.bridge.dispatch('check_tools', {'path_7z': str(self.path)})['path_7z'])
 
+    def test_real_progress_reaches_frontend_events_without_becoming_batch_percent(self):
+        source = self.archive('progress.zip', {'data.txt': 'content' * 1000000})
+        self.add([source])
+        self.run_batch()
+        progress = [event['data'] for event in self.events if event.get('event') == 'progress']
+        self.assertTrue(any(event['percent'] is not None for event in progress), progress)
+        self.assertEqual(self.bridge.completed, 1)
+        self.assertEqual(self.bridge.rows[0]['status'], 'success')
+        self.assertEqual(self.bridge.state()['progress']['archive'], 'progress.zip')
+
     def test_element_settings_directory_is_isolated(self):
         with patch.dict(os.environ, {'AUTO7Z_CONFIG_DIR': str(self.path / 'element-settings')}):
             other = bridge.Bridge(self.events.append)

@@ -27,13 +27,15 @@ class Result:
 class Engine:
     def __init__(self, path_7z, path_rar, passwords=(), mode="auto", depth=20,
                  delete_inner=False, idle_timeout=0, precheck_timeout=30,
-                 notify=None):
+                 notify=None, progress=None):
         self.tools = {"7z": path_7z, "winrar": path_rar}
         self.passwords = list(dict.fromkeys(p for p in passwords if p))
         self.mode, self.depth = mode, depth
         self.delete_inner, self.idle_timeout = delete_inner, idle_timeout
         self.precheck_timeout = precheck_timeout
         self.notify = notify or (lambda message: None)
+        self.progress = progress or (lambda data: None)
+        self.progress_context = {}
         self.cancelled = threading.Event()
         self.preferred_password = None
 
@@ -77,16 +79,37 @@ class Engine:
     def _run(self, command, folder=None, limit=0):
         self.check_cancel()
         # Spool instead of PIPE: no pipe deadlock, no unbounded RAM use.
-        with tempfile.TemporaryFile() as output:
+        # Independent reader: seeking the child's output handle would corrupt its
+        # shared file position. Keep the diagnostic spool and bounded reader separate.
+        with tempfile.TemporaryDirectory(prefix="auto7z-output-") as capture, \
+                open(Path(capture) / "output.log", "w+b") as output, \
+                open(Path(capture) / "output.log", "rb") as progress_output:
             process = subprocess.Popen(command, stdin=subprocess.DEVNULL,
                                        stdout=output, stderr=subprocess.STDOUT,
                                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             started = last_active = last_report = time.monotonic()
             previous = None
+            progress_tail, reported = b"", None
+            def read_progress():
+                nonlocal progress_tail, reported
+                if folder is None or "-bsp1" not in command:
+                    return
+                chunk = progress_output.read(65536)
+                if not chunk:
+                    return
+                progress_tail = (progress_tail + chunk)[-65536:]
+                values = [match for match in re.finditer(rb"(?:^|[\r\n\x08]) *(\d{1,3})%(?=\s|\x08|$)", progress_tail) if int(match[1]) <= 100]
+                if values:
+                    percent = int(values[-1][1])
+                    if 0 <= percent <= 100 and percent != reported:
+                        reported = percent
+                        self.progress({**self.progress_context, "percent": percent})
+                    progress_tail = progress_tail[values[-1].end():][-4096:]
             try:
                 while process.poll() is None:
                     self.check_cancel()
                     now = time.monotonic()
+                    read_progress()
                     if limit and now - started > limit:
                         raise TimeoutError("目錄預檢超時，將直接嘗試解壓")
                     if now - last_report >= 1:
@@ -103,6 +126,7 @@ class Engine:
                         process.wait(timeout=0.05)
                     except subprocess.TimeoutExpired:
                         pass
+                read_progress()
                 output.seek(max(0, os.fstat(output.fileno()).st_size - 262144))
                 return process.returncode, output.read().decode("utf-8", errors="replace")
             finally:
@@ -151,6 +175,8 @@ class Engine:
     def extract(self, source):
         source = Path(source).absolute()
         self.check_cancel()
+        self.progress_context = {"archive": source.name, "tool": "", "attempt": 0}
+        self.progress({**self.progress_context, "percent": None})
         tools = self._tool_order(source)
         if not tools:
             raise RuntimeError("未找到可用解壓引擎，請檢查工具路徑")
@@ -170,6 +196,8 @@ class Engine:
                 self.check_cancel()
                 self.activity = f"{source.name} · {tool} · {'無密碼' if password is None else f'密碼候選 {index}'}"
                 self.notify(self.activity)
+                self.progress_context = {"archive": source.name, "tool": tool, "attempt": index}
+                self.progress({**self.progress_context, "percent": None})
                 stage = Path(tempfile.mkdtemp(prefix=".auto7z-", dir=source.parent))
                 publish_failed = False
                 try:
