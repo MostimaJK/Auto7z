@@ -19,3 +19,10 @@ aqtinstall.log
 
 # Local generated captures; published evidence is tracked explicitly.
 /artifacts/
+
+desktop/node_modules/
+desktop/dist/
+desktop/src-tauri/target/
+desktop/src-tauri/resources/
+desktop/.build/
+desktop/src-tauri/gen/
