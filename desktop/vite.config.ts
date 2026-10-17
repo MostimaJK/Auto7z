@@ -1,14 +1,5 @@
 import { defineConfig } from 'vite';
-export default defineConfig({
-  clearScreen: false,
-  build: {
-    rolldownOptions: {
-      onwarn(warning, defaultHandler) {
-        // Fluent's client-only markers are redundant in this entirely client-rendered app.
-        if (warning.code === 'MODULE_LEVEL_DIRECTIVE') return;
-        defaultHandler(warning);
-      },
-      output: { codeSplitting: { groups: [{ name: 'fluent', test: /@fluentui|@griffel|@floating-ui/ }] } },
-    },
-  },
+import vue from '@vitejs/plugin-vue';
+export default defineConfig({ plugins: [vue()], clearScreen: false,
+  build: { rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'element', test: /element-plus|@element-plus/ }] } } } }
 });

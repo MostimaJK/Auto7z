@@ -50,7 +50,7 @@ DEFAULTS = dict(path_7z="", path_rar="", max_recursion_depth=20,
 class Bridge:
     def __init__(self, emit, config=None):
         self.emit = emit
-        self.config = config or Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "Auto7zFluent/settings.json"
+        self.config = config or Path(os.environ.get("AUTO7Z_CONFIG_DIR", str(Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "Auto7zFluent"))) / "settings.json"
         self.settings = DEFAULTS.copy()
         self.warning = ""
         # Existing configuration is imported read-only; writes use a separate file.
@@ -266,7 +266,10 @@ class Bridge:
 
     def dispatch(self, op, args):
         if op == "init":
-            return dict(settings=self.settings, state=self.state(), warning=self.warning)
+            return dict(settings=self.settings, state=self.state(), warning=self.warning,
+                        tools=dict(bundled_7z=str(ROOT / "7z.exe"), bundled_7z_exists=(ROOT / "7z.exe").is_file(), settings_file=str(self.config)))
+        if op == "check_tools":
+            return {key: bool(isinstance(args.get(key), str) and args[key] and Path(args[key]).is_file()) for key in ("path_7z", "path_rar")}
         if op == "add":
             self.add(**args)
         elif op == "start":

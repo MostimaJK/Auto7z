@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Auto7z Fluent",
+  "productName": "Auto7z Element",
   "version": "0.1.0",
-  "identifier": "local.auto7z.fluent",
+  "identifier": "local.auto7z.element",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://127.0.0.1:1420",
@@ -10,8 +10,30 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [{"title":"Auto7z Fluent","width":1120,"height":760,"minWidth":640,"minHeight":480,"center":true}],
-    "security": {"csp":"default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost"}
+    "windows": [
+      {
+        "title": "Auto7z Element",
+        "width": 1120,
+        "height": 760,
+        "minWidth": 640,
+        "minHeight": 480,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost"
+    }
   },
-  "bundle": {"active":true,"targets":["nsis"],"icon":["../../Auto7z.ico"],"resources":["resources/**/*"]}
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "icon": [
+      "../../Auto7z.ico"
+    ],
+    "resources": [
+      "resources/**/*"
+    ]
+  }
 }

@@ -22,6 +22,7 @@ fn main() {
             } else {
                 command = Command::new(app.path().resource_dir()?.join("resources/auto7z-engine.exe"));
             }
+            command.env("AUTO7Z_CONFIG_DIR", app.path().app_config_dir()?);
             #[cfg(windows)] {
                 use std::os::windows::process::CommandExt;
                 command.creation_flags(0x08000000);

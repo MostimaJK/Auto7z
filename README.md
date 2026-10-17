@@ -1,8 +1,8 @@
 # Auto7z 6.1.0
 
-## Fluent UI React／Tauri 試用版
+## Element Plus／Tauri 試用版
 
-新增獨立桌面介面在 `desktop/`，使用微軟官方 Fluent UI React v9、React／TypeScript 與 Tauri 2，復用現有 Python 解壓核心。執行根目錄 **`Start_Auto7z_Fluent.bat`**；依賴、開發啟動、建置及行為邊界見 [desktop/README.md](desktop/README.md)。舊 Python `Start_Auto7z.bat` 和 `Auto7zCpp/` 均保留，可直接比較。新設定獨立保存，不覆寫舊設定。本次僅本地試用，未推送或發布。
+新增獨立桌面介面在 `desktop/`，使用 Element Plus 2.14.7、Vue 3／TypeScript 與 Tauri 2，復用現有 Python 解壓核心。執行根目錄 **`Start_Auto7z_Element.bat`**；三種處理方式直接點選，候選密碼常駐，日誌與設定使用獨立頁面。設定支援內置或自訂解壓軟體路徑。依賴、開發啟動、建置及行為邊界見 [desktop/README.md](desktop/README.md)。舊 Python `Start_Auto7z.bat` 和 `Auto7zCpp/` 均保留；Fluent 原始碼保留於 `codex/fluent-tauri-desktop` 分支，既有 Fluent release 仍可用原 bat 比較。新版設定獨立保存，不覆寫舊設定。本次僅本地試用，未推送或發布。
 
 Windows 桌面批量解壓助手，支持修改後綴、自動選擇 7-Zip / WinRAR、多密碼嘗試與多層遞歸解壓。
 

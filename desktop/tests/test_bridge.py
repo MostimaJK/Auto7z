@@ -134,6 +134,22 @@ class BridgeTests(unittest.TestCase):
             self.bridge.dispatch('save', {'max_recursion_depth': 0})
         self.assertEqual(json.loads(self.bridge.config.read_text())['theme'], 'dark')
 
+    def test_tool_metadata_and_path_checks(self):
+        reply = self.bridge.dispatch('init', {})
+        self.assertTrue(reply['tools']['bundled_7z_exists'])
+        self.assertEqual(Path(reply['tools']['bundled_7z']), ROOT / '7z.exe')
+        checked = self.bridge.dispatch('check_tools', {'path_7z': str(ROOT / '7z.exe'), 'path_rar': str(self.path / 'missing.exe')})
+        self.assertEqual(checked, {'path_7z': True, 'path_rar': False})
+        self.assertFalse(self.bridge.dispatch('check_tools', {'path_7z': str(self.path)})['path_7z'])
+
+    def test_element_settings_directory_is_isolated(self):
+        with patch.dict(os.environ, {'AUTO7Z_CONFIG_DIR': str(self.path / 'element-settings')}):
+            other = bridge.Bridge(self.events.append)
+            self.assertEqual(other.config, self.path / 'element-settings/settings.json')
+            other.dispatch('save', {**other.settings, 'theme': 'dark'})
+            self.assertTrue(other.config.is_file())
+            self.assertFalse(self.bridge.config.exists())
+
     def test_cancellation_fixture_waits_for_real_owned_subprocess(self):
         # Simulated extractor workload, but actual child process/cancellation lifecycle.
         good = self.archive('good.zip')

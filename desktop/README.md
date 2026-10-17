@@ -1,12 +1,12 @@
-# Auto7z Fluent
+# Auto7z Element
 
-本輪視覺修訂先使用根目錄 `Preview_Auto7z_Fluent.bat` 比較：官方 Dropdown、較圓潤的主題形態與重新分組的配置區。這個入口啟動已編譯的 debug 原生版本（需要現有 Python 環境），設定隔離保存於 artifacts/fluent-refinement-profile。原 `Start_Auto7z_Fluent.bat` 仍開啟上一版本地 release，暫不覆蓋，方便比較；預覽同樣連接真實解壓核心，沒有模擬任務。
-
-Microsoft `@fluentui/react-components` **9.74.9**、React **19.3.1**／TypeScript、Tauri **2.12.4**（CLI **2.12.3**）。透過私有 stdin/stdout JSON-lines 重用上層 `extraction.py`；沒有 HTTP 解壓服務、不載入 PyQt。Python／C++ 舊入口均保留。
+Element Plus **2.14.7**、Vue **3.5.44**／TypeScript、Tauri **2.12.4**（CLI **2.12.3**）。Element Plus 是 Vue 組件庫，因此本輪將 React 前端改為 Vue 3；Tauri 宿主與成熟的 `extraction.py` 保留。後台不載入 PyQt。
 
 ## 啟動
 
-根目錄執行 `Start_Auto7z_Fluent.bat`。存在 release 時直接啟動，否則使用開發模式；不自動安裝依賴、不發布。Windows 10／11 x64 需要 WebView2 Runtime。開發另需 Node.js、Rust stable MSVC、Visual Studio 2022 C++ 工作負載與 Windows SDK、Python 3.10+。優先使用根目錄 `.venv/Scripts/python.exe`，缺少時使用 PATH 的 Python。背景僅使用標準庫。
+根目錄執行 **Start_Auto7z_Element.bat**，優先啟動本地 release，其次 debug，沒有編譯檔時進入開發模式。debug 需要現有 Python 環境；release 帶獨立後台。Windows 10／11 x64 需要 WebView2 Runtime。腳本不自動安裝依賴、不發布。
+
+開發需要 Node.js、Rust stable MSVC、Visual Studio C++ 工作負載與 Windows SDK、Python 3.10+。後台優先使用根目錄 `.venv/Scripts/python.exe`，缺少時使用 PATH 的 Python；僅使用標準庫。
 
 ```powershell
 cd desktop
@@ -15,49 +15,48 @@ $env:PATH="$env:USERPROFILE/.cargo/bin;"+$env:PATH
 npm run desktop
 ```
 
-`npm run dev` 僅供瀏覽器版面預覽，沒有本機解壓能力，會清楚提示。
+`npm run dev` 只供瀏覽器版面預覽，會提示使用桌面入口處理文件。
 
 ## 建置
 
 ```powershell
 cd desktop
-npm run build       # TypeScript + 前端正式建置
-npm run package     # PyInstaller + Tauri release + NSIS
+npm run build                       # Vue TypeScript 檢查與前端建置
+npm run tauri -- build --debug --no-bundle
+npm run package                     # PyInstaller、Tauri release、NSIS 本地安裝包
 ```
 
-腳本使用既有 `.build-venv` 的 PyInstaller。新機先建立該虛擬環境並安裝 PyInstaller（根目錄 `requirements-build.txt` 亦包含它）。產物在 `src-tauri/target/release/`；安裝包在 `bundle/nsis/`。可攜執行時須一起保留 `resources/` 引擎、7-Zip 與授權文件，不能只複製主 EXE。WinRAR 不隨新套件散佈，請安裝合法版本後設定路徑。版本由 npm／Cargo lockfiles 鎖定；首次建置需要下載依賴。
+打包腳本使用根目錄 `.build-venv` 的 PyInstaller，授權收集需 Python 3.11+。新機先建立該虛擬環境並安裝 PyInstaller（`requirements-build.txt` 亦包含它）。產物在 `src-tauri/target/release/auto7z-element.exe`，安裝包在 `bundle/nsis/`。可攜執行時保留同級 resources 內的後台、7-Zip 與授權文件；不要只複製主 EXE。WinRAR 不隨新套件散佈，請使用自行安裝的合法版本。版本鎖在 npm／Cargo lockfiles。
 
-打包腳本的授權收集使用 Python 3.11+ 的 `tomllib`。會收集現有生產 JavaScript 套件與 Cargo 鎖定套件的授權聲明，放入 resources/licenses。
+## 使用與設定
 
-## 功能與資料
+- 工作區上方直接選擇遞迴解壓、修改後綴、改後綴並解壓。後兩者可輸入目標後綴。切換已完成的佇列會提示清空紀錄，磁碟文件保留。
+- 支援文件／資料夾拖入與原生選擇器。資料夾遞迴掃描，分卷只加入首卷；一般解壓只收支援壓縮包，後綴模式接受其他文件。跳過符號連結與 `.auto7z-` 暫存目錄。
+- 候選密碼在兩個解壓模式常駐，每行或逗號分隔，僅留在本次工作階段。單純改後綴不顯示密碼。
+- 文件完成數、目前活動與結果分開顯示。核心沒有可靠位元組總量，活動使用不確定動畫並明示未知，不虛構百分比。
+- 取消管理所屬子進程並保留成功結果；重試略過成功項。部分完成會從目前原包重新解壓至新目錄，並非續傳。外層原包保留，同名結果另建目錄。
+- 點擊文件名稱查看完整來源、結果與錯誤，可選取複製及開啟結果目錄。日誌在獨立頁，可選取／整份複製，保留最近 2,000 筆有界活動與診斷，並非全部 7-Zip 原始輸出。
+- 設定在獨立頁：選內置 7-Zip 或自訂執行檔，選填 WinRAR；提供原生瀏覽與路徑存在性檢查。檢查不等於驗證軟體版本或執行相容性，執行失敗會於任務結果顯示。
+- 設定可調遞迴深度、預檢逾時、停滯保護、內層刪除及淺／深／系統主題。先儲存才套用，工作中不能修改；未儲存離開有提示。
+- Ctrl+O 加文件、Ctrl+Shift+O 加資料夾、Ctrl+Enter 開始；Tab 切換控件、方向鍵選單選按鈕，文件名稱按鈕可鍵盤開啟詳情。
 
-- 同一佇列提供遞迴解壓、還原後綴並解壓、只改後綴。文件／資料夾拖入、原生多選；資料夾遞迴掃描，分卷只加入首卷。一般解壓只收支援的壓縮包，後綴模式接受其他文件；跳過符號連結與 `.auto7z-` 暫存目錄。
-- 候選密碼按行或逗號分隔；僅保留本次工作階段。設定內含引擎路徑、遞迴深度、預檢逾時、停滯保護及成功後內層刪除。
-- 取消等待所屬子進程退出，成功結果保留。Windows Job Object 在背景異常退出時回收後代進程。每次嘗試隔離暫存、同名結果另建目錄；外層原包保留。
-- 重試略過成功項。部分完成／取消的還原後綴任務使用目前原包重試；重新解壓外層到新目錄，先前結果仍保留。
-- 本輪文件完成數、結果狀態、目前活動分開顯示。核心沒有可靠位元組總量，使用 Fluent 不確定進度並明示未知，不顯示虛構百分比。
-- 選取列可查看完整路徑、錯誤與結果；文字可選取複製。日誌保留最近 2,000 筆活動與引擎有界診斷，不宣稱完整收錄 7-Zip 原始輸出。
-- Ctrl+O 加文件、Ctrl+Shift+O 加資料夾、Ctrl+Enter 開始；方向鍵移動文件列、空白鍵選取、Enter 查看。淺色／深色／跟隨系統。最小 640×480 邏輯像素；窄視窗詳情移至下方，內容獨立滾動。
+新版設定由 Tauri app_config_dir 指定，Windows 為 `%APPDATA%/local.auto7z.element/settings.json`。首次只讀匯入根目錄舊設定，之後獨立原子保存。舊 Python、C++ 與 Fluent 設定不覆寫。佇列、密碼與日誌不跨啟動保存；清空佇列不刪磁碟文件。
 
-設定：`%LOCALAPPDATA%/Auto7zFluent/settings.json`，首次在開發環境只讀匯入根目錄舊設定，不回寫舊版。佇列、結果紀錄與密碼只保留在目前工作階段；輸出文件實際保存在磁碟。清空佇列不刪磁碟文件。設定取消不保存。
+## 保留舊版與回退
 
-## 測試
+本輪分支 `codex/element-plus-desktop`；前一版 Fluent 原始碼在 `codex/fluent-tauri-desktop`。既有 `Start_Auto7z_Fluent.bat` 可啟動原 Fluent release；它的開發後備入口使用目前 checkout 的前端，欲開發 Fluent 請先切回該分支。原 `Start_Auto7z.bat`、Python 模組及 `Auto7zCpp/` 保留。
 
-根目錄執行：
+## 架構與測試
+
+Vue → Tauri 限定 JSON 指令 → 獨立 Python 後台 → 現有 Engine → 7-Zip／WinRAR。掃描與解壓在後台執行緒執行，stdin 仍可接收取消。關閉宿主透過 EOF 合作取消；Windows Job Object 在宿主異常結束時回收後代進程。C++ 引擎目前結束後才回傳結果，故先復用已有即時回報與取消的 Python 核心。
 
 ```powershell
-./.venv/Scripts/python.exe -m unittest discover -s tests -v
 python -m unittest discover -s desktop/tests -v
+./.venv/Scripts/python.exe -m unittest discover -s tests -v
 ```
 
-橋接測試使用真實 7-Zip 驗證批量重試、加密分卷、多密碼、遞迴部分結果、改名衝突與超過 260 字元路徑。取消案例為模擬耗時工作，但確實創建、取消和回收子進程；不等同大型壓縮包取消效能測試。實際視覺／互動檢查見 `design-notes.md`。
+橋接測試包含真實加密分卷／多密碼、批量重試、遞迴部分結果、後綴衝突、超過 260 字元路徑、工具路徑檢查與設定隔離。取消單元案例使用模擬耗時 extractor，但創建和回收的子進程是真實的。原生視覺與真實解壓檢查見 `design-notes.md`。
 
-可重現版面診斷：啟動前為該進程設定 `AUTO7Z_VERIFY_SIZE=640x480`；`AUTO7Z_VERIFY_ZOOM=1.5` 可放大 WebView。這些選項不修改系統 DPI，不等同跨 DPI 顯示器實測。掃描同樣可取消，已加入項目保留。
+診斷選項：`AUTO7Z_VERIFY_SIZE=640x480` 指定測試窗口；`AUTO7Z_VERIFY_ZOOM=2` 放大 WebView，不修改系統 DPI，不等同跨 DPI 顯示器實測。
 
-## 架構選擇
-
-Rust 層轉送限定 JSON 指令並提供原生選擇器；前端沒有通用 shell 能力。獨立 Python 進程在執行緒中處理 IO，以事件回報。關閉宿主時透過 EOF 合作取消，異常終止由 Windows Job Object 保護。
-
-C++ 引擎也可復用，但目前 `--engine request response` 只在結束後回傳結果，仍需增補即時事件和外部取消協議。因此首版復用已獨立、有測試的 Python 核心。無法安裝 Rust 的機器可用建置套件；若環境禁止 WebView2，舊 Qt 入口是可行替代。
-
-官方參考：[Fluent React](https://react.fluentui.dev/)、[Tauri 依賴](https://v2.tauri.app/start/prerequisites/)、[Tauri 事件](https://v2.tauri.app/develop/calling-frontend/)。
+官方參考：[Element Plus](https://element-plus.org/en-US/guide/installation.html)、[Tauri prerequisites](https://v2.tauri.app/start/prerequisites/)。
