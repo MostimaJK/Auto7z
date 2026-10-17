@@ -3,6 +3,9 @@ import zhTw from 'element-plus/es/locale/lang/zh-tw';
 import type { Row } from './api';
 import { useDesktop } from './useDesktop';
 import ModeSwitch from './ModeSwitch.vue';
+const pages = [{ value: 'work', label: '工作區' }, { value: 'logs', label: '日誌' }, { value: 'settings', label: '設定' }];
+const extensions = ['.zip', '.7z', '.rar', '.tar', '.gz', '.bz2', '.xz', '.tar.gz', '.tar.bz2', '.tar.xz', '.tar.zst', '.tgz', '.tbz2', '.txz', '.zst', '.cab', '.iso', '.wim', '.001'];
+function navigatePage(value: string) { if (value === 'work' || value === 'logs' || value === 'settings') void navigate(value); }
 const { page, state, draft, tools, ready, working, error, settingError, logs, mode, extension, engineMode, passwords, filter, selected, detail, help, dragging, checkedTools, dark, busy, candidatePasswords, statuses, statusTypes, shown, counts, done, retry, canStart, useBundled, dirty, name, size, attempt, navigate, pick, remove, start, changeMode, browse, checkTools, saveSettings, resetDraft, toggleTheme, openResult, cancel, copyLogs } = useDesktop();
 </script>
 
@@ -12,9 +15,7 @@ const { page, state, draft, tools, ready, working, error, settingError, logs, mo
       <header class="app-header">
         <div class="brand"><span class="brand-mark">A<span>7</span></span><h1>Auto7z</h1></div>
         <nav class="navigation" aria-label="主導覽">
-          <el-button :type="page === 'work' ? 'primary' : undefined" :plain="page !== 'work'" @click="navigate('work')">工作區</el-button>
-          <el-button :type="page === 'logs' ? 'primary' : undefined" :plain="page !== 'logs'" @click="navigate('logs')">日誌</el-button>
-          <el-button :type="page === 'settings' ? 'primary' : undefined" :plain="page !== 'settings'" @click="navigate('settings')">設定</el-button>
+          <ModeSwitch :model-value="page" :items="pages" label="頁面切換" compact @update:model-value="navigatePage" />
         </nav>
         <el-button class="theme-button" circle :aria-label="dark ? '切換淺色主題' : '切換深色主題'" :disabled="busy || !ready || (page === 'settings' && dirty)" @click="toggleTheme">{{ dark ? '☀' : '☾' }}</el-button>
       </header>
@@ -23,8 +24,8 @@ const { page, state, draft, tools, ready, working, error, settingError, logs, mo
       <main v-show="page === 'work'" class="workspace-page">
         <section class="mode-toolbar" aria-label="處理方式">
           <ModeSwitch :model-value="mode" :disabled="busy" @update:model-value="changeMode" />
-          <label v-if="mode !== 'extract'" class="inline-field"><span>目標後綴</span><el-input v-model="extension" aria-label="目標後綴" :disabled="busy" class="extension-input" /></label>
-          <label v-if="mode !== 'rename'" class="inline-field engine-field"><span>引擎</span><el-select v-model="engineMode" aria-label="解壓引擎" :disabled="busy"><el-option label="自動選擇" value="auto" /><el-option label="7-Zip" value="7z" /><el-option label="WinRAR" value="winrar" /></el-select></label>
+          <label v-if="mode !== 'extract'" class="inline-field"><span>目標後綴</span><el-select v-model="extension" aria-label="目標後綴，可選擇或自訂" :disabled="busy" class="extension-input" filterable allow-create default-first-option :reserve-keyword="false" placeholder="選擇或輸入後綴"><el-option v-for="ext in extensions" :key="ext" :label="ext" :value="ext" /></el-select></label>
+          <label v-if="mode !== 'rename'" class="inline-field engine-field"><span>解壓軟體</span><el-select v-model="engineMode" aria-label="解壓軟體" :disabled="busy"><el-option label="自動選擇" value="auto" /><el-option label="7-Zip" value="7z" /><el-option label="WinRAR" value="winrar" /></el-select></label>
         </section>
 
         <section class="queue-panel" aria-label="文件佇列">
@@ -54,7 +55,7 @@ const { page, state, draft, tools, ready, working, error, settingError, logs, mo
         <footer class="task-footer">
           <div class="task-status"><div class="status-title" role="status"><strong>{{ state.activity }}</strong><span v-if="state.total">本輪已處理 {{ state.completed }} / {{ state.total }}</span></div><template v-if="state.busy">
             <div class="extraction-progress" :class="{ 'is-unknown': state.progress?.percent == null }" role="progressbar" aria-label="目前壓縮包的本次解壓進度" :aria-valuenow="state.progress?.percent ?? undefined" :aria-valuemin="0" :aria-valuemax="100"><span :style="state.progress?.percent != null ? { width: `${state.progress.percent}%` } : undefined" /></div>
-            <div class="progress-caption"><span>目前壓縮包：{{ state.progress?.archive || name(state.rows.find(r => r.id === state.current)?.source || '') }}</span><strong v-if="state.progress?.percent != null">7-Zip 回報 {{ state.progress.percent }}%</strong><span v-else class="muted">{{ state.progress?.tool === 'winrar' ? 'WinRAR · 進度未知' : '預檢／等待引擎進度' }}</span></div>
+            <div class="progress-caption"><span>目前壓縮包：{{ state.progress?.archive || name(state.rows.find(r => r.id === state.current)?.source || '') }}</span><strong v-if="state.progress?.percent != null">7-Zip 回報 {{ state.progress.percent }}%</strong><span v-else class="muted">{{ state.progress?.tool === 'winrar' ? 'WinRAR · 進度未知' : '預檢／等待軟體進度' }}</span></div>
           </template><span v-else-if="done" class="muted">成功 {{ counts.success }} · 部分完成 {{ counts.partial }} · 失敗 {{ counts.failed }} · 取消 {{ counts.cancelled }}</span></div>
           <el-button v-if="state.busy || state.scanning" round :disabled="state.stopping || working" @click="cancel">{{ state.stopping ? '正在取消…' : '取消工作' }}</el-button>
           <el-button v-else type="primary" round :disabled="!ready || busy || !canStart" @click="start">{{ retry ? '重試未成功項目' : mode === 'rename' ? '修改後綴' : '開始解壓' }}</el-button>
@@ -75,7 +76,7 @@ const { page, state, draft, tools, ready, working, error, settingError, logs, mo
             <el-form-item label="7-Zip"><el-radio-group v-model="useBundled"><el-radio-button :value="true" :disabled="!tools.bundled_7z_exists">使用內置版本</el-radio-button><el-radio-button :value="false">自訂路徑</el-radio-button></el-radio-group></el-form-item>
             <el-form-item label="7-Zip 執行檔" :error="checkedTools && draft.path_7z && !checkedTools.path_7z ? '找不到此執行檔' : ''"><div class="path-row"><el-input v-model="draft.path_7z" :readonly="useBundled" aria-label="7-Zip 執行檔路徑" placeholder="選擇 7z.exe" /><el-button v-if="!useBundled" @click="browse('path_7z')">瀏覽</el-button><el-tag v-if="checkedTools?.path_7z" type="success">已找到</el-tag></div></el-form-item>
             <el-form-item label="WinRAR 執行檔（選用）" :error="checkedTools && draft.path_rar && !checkedTools.path_rar ? '找不到此執行檔' : ''"><div class="path-row"><el-input v-model="draft.path_rar" aria-label="WinRAR 執行檔路徑" placeholder="選擇自行安裝的 WinRAR.exe" clearable /><el-button @click="browse('path_rar')">瀏覽</el-button><el-tag v-if="checkedTools?.path_rar" type="success">已找到</el-tag></div></el-form-item>
-            <el-button @click="attempt(checkTools)">檢查路徑</el-button><p class="field-note">可使用內置 7-Zip，或指定已安裝的版本。自動引擎模式只需一個可用引擎。</p>
+            <el-button @click="attempt(checkTools)">檢查路徑</el-button><p class="field-note">可使用內置 7-Zip，或指定已安裝的版本。自動選擇只需一個可用解壓軟體。</p>
           </section>
           <section class="settings-section"><h3>處理選項</h3><div class="numeric-settings"><el-form-item label="遞迴層數上限"><el-input-number v-model="draft.max_recursion_depth" :min="1" :max="100" controls-position="right" /></el-form-item><el-form-item label="目錄預檢逾時（秒）"><el-input-number v-model="draft.timeout_7z_precheck" :min="3" :max="300" controls-position="right" /></el-form-item><el-form-item label="停滯保護（秒，0 為關閉）"><el-input-number v-model="draft.idle_timeout_seconds" :min="0" :max="86400" controls-position="right" /></el-form-item></div><el-checkbox v-model="draft.delete_after_extract">成功解壓後刪除內層壓縮包</el-checkbox><p class="field-note">最外層原包始終保留；同名結果另建目錄。</p></section>
           <section class="settings-section"><h3>外觀</h3><el-radio-group v-model="draft.theme"><el-radio-button value="system">跟隨系統</el-radio-button><el-radio-button value="light">淺色</el-radio-button><el-radio-button value="dark">深色</el-radio-button></el-radio-group></section>
@@ -87,7 +88,7 @@ const { page, state, draft, tools, ready, working, error, settingError, logs, mo
         <template v-if="detail"><el-tag :type="statusTypes[detail.status]" round>{{ statuses[detail.status] }}</el-tag><el-form label-position="top" class="detail-form"><el-form-item label="來源"><el-input :model-value="detail.source" type="textarea" readonly :autosize="{ minRows: 2, maxRows: 6 }" /></el-form-item><el-form-item v-if="detail.archive && detail.archive !== detail.source" label="目前原包"><el-input :model-value="detail.archive" type="textarea" readonly :autosize="{ minRows: 2, maxRows: 6 }" /></el-form-item><el-form-item v-if="detail.output" label="結果目錄"><el-input :model-value="detail.output" type="textarea" readonly :autosize="{ minRows: 2, maxRows: 6 }" /></el-form-item><el-form-item v-if="detail.detail" label="處理訊息"><el-input :model-value="detail.detail" type="textarea" readonly :autosize="{ minRows: 3, maxRows: 12 }" /></el-form-item></el-form></template>
         <template #footer><el-button v-if="detail" type="primary" :disabled="['pending', 'running'].includes(detail.status)" @click="openResult">{{ detail.output ? '開啟結果目錄' : '開啟來源位置' }}</el-button></template>
       </el-drawer>
-      <el-dialog v-model="help" title="使用說明" width="min(520px, 92vw)"><p>加入文件或資料夾，直接選擇處理方式後開始。資料夾會遞迴掃描；分卷只加入首卷。偽裝副檔名請使用「改後綴並解壓」。</p><p>密碼每行一組或以逗號分隔。選取文件名稱可查看完整路徑、結果和錯誤；重試略過成功項目。</p><p>Ctrl+O 加入文件 · Ctrl+Shift+O 加入資料夾 · Ctrl+Enter 開始。日誌頁可選取複製記錄；設定頁可修改解壓軟體路徑。</p><template #footer><el-button type="primary" @click="help = false">知道了</el-button></template></el-dialog>
+      <el-dialog v-model="help" title="使用說明" width="min(520px, 92vw)"><p>加入文件或資料夾，直接選擇處理方式後開始。資料夾會遞迴掃描；分卷只加入首卷。偽裝副檔名請使用「改後綴並解壓」。目標後綴可選擇或輸入自訂值後按 Enter；修改後綴不會轉換壓縮格式。</p><p>密碼每行一組或以逗號分隔。選取文件名稱可查看完整路徑、結果和錯誤；重試略過成功項目。</p><p>Ctrl+O 加入文件 · Ctrl+Shift+O 加入資料夾 · Ctrl+Enter 開始。日誌頁可選取複製記錄；設定頁可修改解壓軟體路徑。</p><template #footer><el-button type="primary" @click="help = false">知道了</el-button></template></el-dialog>
     </div>
   </el-config-provider>
 </template>

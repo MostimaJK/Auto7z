@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-const props = defineProps<{ modelValue: string; disabled?: boolean }>();
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+const props = defineProps<{ modelValue: string; disabled?: boolean; items?: readonly { value: string; label: string }[]; label?: string; compact?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
-const modes = [{ value: 'extract', label: '遞迴解壓' }, { value: 'rename', label: '修改後綴' }, { value: 'restore', label: '改後綴並解壓' }];
+const modes = computed(() => props.items || [{ value: 'extract', label: '遞迴解壓' }, { value: 'rename', label: '修改後綴' }, { value: 'restore', label: '改後綴並解壓' }]);
 const track = ref<HTMLElement>();
 const indicator = ref({ translate: '0px', width: '0px' });
 const measured = ref(false);
 let observer: ResizeObserver | undefined;
 function measure() {
-  const index = modes.findIndex(mode => mode.value === props.modelValue);
+  const index = modes.value.findIndex(mode => mode.value === props.modelValue);
   const item = track.value?.querySelectorAll<HTMLElement>('.el-radio-button')[index];
   if (!item || !track.value) return;
   const bounds = item.getBoundingClientRect();
@@ -16,7 +16,7 @@ function measure() {
   indicator.value = { translate: `${bounds.left - track.value.getBoundingClientRect().left}px`, width: `${bounds.width}px` };
   measured.value = true;
 }
-watch(() => props.modelValue, () => nextTick(measure));
+watch([() => props.modelValue, () => props.items], () => nextTick(measure));
 onMounted(() => {
   observer = new ResizeObserver(measure);
   if (track.value) observer.observe(track.value);
@@ -27,16 +27,16 @@ onUnmounted(() => observer?.disconnect());
 </script>
 
 <template>
-  <div ref="track" class="mode-switch" :class="{ 'is-disabled': disabled }">
+  <div ref="track" class="mode-switch" :class="{ 'is-disabled': disabled, 'is-compact': compact }">
     <span v-show="measured" class="mode-switch__selection" :style="indicator" aria-hidden="true" />
-    <el-radio-group :model-value="modelValue" :disabled="disabled" class="mode-switch__options" aria-label="處理方式" @update:model-value="(value: string | number | boolean | undefined) => emit('update:modelValue', String(value))">
+    <el-radio-group :model-value="modelValue" :disabled="disabled" class="mode-switch__options" :aria-label="label || '處理方式'" @update:model-value="(value: string | number | boolean | undefined) => emit('update:modelValue', String(value))">
       <el-radio-button v-for="mode in modes" :key="mode.value" :value="mode.value">{{ mode.label }}</el-radio-button>
     </el-radio-group>
   </div>
 </template>
 
 <style scoped>
-.mode-switch { --segment-track: #e9e9e9; --segment-fill: #fff; --segment-edge: #242424; --segment-text: #616161; --segment-selected-text: #202020; position: relative; isolation: isolate; background: var(--segment-track); border-radius: 10px; width: fit-content; max-width: 100%; flex-shrink: 0; }
+.mode-switch { --segment-track: #e9edf6; --segment-fill: #fff; --segment-edge: var(--accent-line); --segment-text: #596579; --segment-selected-text: var(--accent-ink); position: relative; isolation: isolate; background: var(--segment-track); border-radius: 10px; width: fit-content; max-width: 100%; flex-shrink: 0; }
 .mode-switch__selection { position: absolute; left: 0; top: 0; height: 100%; background: var(--segment-fill); border: 2px solid var(--segment-edge); border-radius: 12px; pointer-events: none; transition: translate 200ms cubic-bezier(0, 0, .2, 1), width 200ms cubic-bezier(0, 0, .2, 1); }
 .mode-switch :deep(.el-radio-group) { display: flex; flex-wrap: nowrap; position: relative; z-index: 1; }
 .mode-switch :deep(.el-radio-button) { border-radius: 12px; }
@@ -47,7 +47,8 @@ onUnmounted(() => observer?.disconnect());
 .mode-switch :deep(.el-radio-button:focus-within) { outline: none; }
 .mode-switch :deep(.el-radio-button:has(input:focus-visible)) { outline: 2px solid var(--el-color-primary); outline-offset: 3px; }
 .is-disabled { opacity: .5; }
-:global(html.dark .mode-switch) { --segment-track: #303239; --segment-fill: #454851; --segment-edge: #e3e5eb; --segment-text: #c0c3cc; --segment-selected-text: #fff; }
+:global(html.dark .mode-switch) { --segment-track: #272f40; --segment-fill: #202d4b; --segment-text: #bec8db; }
+.is-compact :deep(.el-radio-button__inner) { min-height: 36px; padding: 11px 16px; }
 @media (max-height: 620px) { .mode-switch :deep(.el-radio-button__inner) { min-height: 36px; padding-top: 11px; padding-bottom: 11px; } }
 @media (prefers-reduced-motion: reduce) { .mode-switch__selection, .mode-switch :deep(.el-radio-button__inner) { transition: none; } .mode-switch:not(.is-disabled) :deep(.el-radio-button:active .el-radio-button__inner) { transform: none; } }
 @media (forced-colors: active) { .mode-switch { background: Canvas; } .mode-switch__selection { background: Highlight; border-color: Highlight; } .mode-switch :deep(.el-radio-button__inner) { color: ButtonText !important; } .mode-switch :deep(.el-radio-button.is-active .el-radio-button__inner) { color: HighlightText !important; } }

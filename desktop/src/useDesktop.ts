@@ -78,7 +78,7 @@ export function useDesktop() {
     await attempt(async () => { await rpc('remove', { ids }); selected.value = []; if (detail.value && ids.includes(detail.value.id)) detail.value = null; });
   }
   async function start() {
-    await attempt(async () => { error.value = ''; await rpc('start', { mode: mode.value, extension: extension.value, passwords: candidatePasswords.value, engine_mode: engineMode.value }); });
+    await attempt(async () => { error.value = ''; extension.value = extension.value.trim(); if (extension.value && !extension.value.startsWith('.')) extension.value = '.' + extension.value; await rpc('start', { mode: mode.value, extension: extension.value, passwords: candidatePasswords.value, engine_mode: engineMode.value }); });
   }
   async function changeMode(value: string | number | boolean | undefined) {
     const next = String(value);

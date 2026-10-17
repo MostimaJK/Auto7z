@@ -1,6 +1,6 @@
 {
-  "name": "auto7z-element",
-  "version": "0.1.0",
+  "name": "auto7z-desktop",
+  "version": "7.0.0",
   "private": true,
   "type": "module",
   "scripts": {

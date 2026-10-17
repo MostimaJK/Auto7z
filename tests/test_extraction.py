@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import tarfile
 import threading
 import time
 import unittest
@@ -44,6 +45,18 @@ class ExtractionTests(unittest.TestCase):
         self.assertTrue(measured, events)
         self.assertTrue(all(0 <= event['percent'] <= 100 and event['archive'] == source.name and event['tool'] == '7z' for event in measured))
         self.assertEqual((Path(result.output) / 'data.txt').stat().st_size, 17000000)
+
+    def test_existing_compound_extension_is_not_duplicated(self):
+        content = self.folder / 'value.txt'; content.write_text('compound extension')
+        source = self.folder / 'compound.tar.gz'
+        with tarfile.open(source, 'w:gz') as archive:
+            archive.add(content, arcname='value.txt')
+        result = self.engine.process(source, '.tar.gz')
+        self.assertEqual(result.status, 'success', result.detail)
+        self.assertEqual(result.archive, str(source))
+        self.assertTrue(source.is_file())
+        self.assertFalse((self.folder / 'compound.tar.tar.gz').exists())
+        self.assertEqual(next(Path(result.output).rglob('value.txt')).read_text(), 'compound extension')
 
     def test_progress_stream_handles_split_frames_and_out_of_range_values(self):
         # Synthetic output protocol; real child process, not real extraction.

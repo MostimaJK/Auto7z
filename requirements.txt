@@ -1,2 +1,2 @@
-PyQt5>=5.15.11,<6
-PyQt-Fluent-Widgets>=1.11.3,<2
+# Runtime backend uses only Python 3.11+ standard library.
+# Frontend dependencies are locked in desktop/package-lock.json.

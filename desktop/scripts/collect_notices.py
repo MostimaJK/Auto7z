@@ -1,12 +1,19 @@
 """Collect installed production JS licenses and locked Rust crate licenses for local bundles."""
 import json
 import os
+import sys
+import shutil
+import importlib.metadata
 from pathlib import Path
 import tomllib
 
 desktop = Path(__file__).resolve().parents[1]
 target = desktop / 'src-tauri/resources/licenses'
 target.mkdir(parents=True, exist_ok=True)
+shutil.copy2(Path(sys.base_prefix) / 'LICENSE.txt', target / 'Python.txt')
+distribution = importlib.metadata.distribution('pyinstaller')
+copying = next(path for path in distribution.files or [] if Path(path).name == 'COPYING.txt')
+shutil.copy2(distribution.locate_file(copying), target / 'PyInstaller.txt')
 chunks = []
 lock = json.loads((desktop / 'package-lock.json').read_text(encoding='utf-8'))
 for name, entry in sorted(lock['packages'].items()):

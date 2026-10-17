@@ -2,13 +2,19 @@
   font-family: 'Segoe UI', 'Microsoft JhengHei UI', 'Microsoft JhengHei', 'Microsoft YaHei UI', sans-serif;
   font-synthesis: none;
   --el-font-family: 'Segoe UI', 'Microsoft JhengHei UI', 'Microsoft JhengHei', 'Microsoft YaHei UI', sans-serif;
-  --el-color-primary: #2563eb;
-  --el-color-primary-light-3: #567ff0;
-  --el-color-primary-light-5: #92b1ff;
-  --el-color-primary-light-7: #c3d4fc;
-  --el-color-primary-light-8: #dce7ff;
-  --el-color-primary-light-9: #eff5ff;
-  --el-color-primary-dark-2: #1d4ed8;
+  --brand-fill: #002fa7;
+  --action-fill: #002fa7;
+  --action-hover: #002687;
+  --action-active: #001f70;
+  --accent-ink: #002fa7;
+  --accent-line: #002fa7;
+  --el-color-primary: #002fa7;
+  --el-color-primary-light-3: #4d6dc1;
+  --el-color-primary-light-5: #8097d3;
+  --el-color-primary-light-7: #b3c1e5;
+  --el-color-primary-light-8: #ccd5ed;
+  --el-color-primary-light-9: #e6eaf6;
+  --el-color-primary-dark-2: #002687;
   --el-border-radius-base: 8px;
   --el-border-radius-small: 6px;
   --el-font-size-base: 14px;
@@ -17,7 +23,7 @@
   --text: #202b3c;
   --muted: #596779;
   --line: #e2e7ef;
-  --brand-wash: #edf3ff;
+  --brand-wash: #eef2ff;
   --el-text-color-primary: #202b3c;
   --el-text-color-regular: #445267;
   --el-border-color: #cbd4e1;
@@ -28,14 +34,24 @@ html.dark {
   --text: #e8edf6;
   --muted: #aebbd0;
   --line: #323d4e;
-  --brand-wash: #22334f;
+  --brand-wash: #202d4b;
+  --action-fill: #315bdd;
+  --action-hover: #4068e8;
+  --action-active: #254dc5;
+  --accent-ink: #9cb4ff;
+  --accent-line: #789aff;
   --el-bg-color: #1d232e;
   --el-bg-color-page: #141820;
   --el-bg-color-overlay: #242d3b;
   --el-text-color-primary: #e8edf6;
   --el-text-color-regular: #c3cddd;
-  --el-color-primary: #7eb0ff;
-  --el-color-primary-light-9: #22334f;
+  --el-color-primary: #9cb4ff;
+  --el-color-primary-light-3: #789aff;
+  --el-color-primary-light-5: #526cb8;
+  --el-color-primary-light-7: #354b85;
+  --el-color-primary-light-8: #2a3c69;
+  --el-color-primary-light-9: #202d4b;
+  --el-color-primary-dark-2: #bdd0ff;
   --el-border-color: #46556c;
   --el-border-color-light: #354256;
   --el-fill-color-blank: #1d232e;
@@ -52,15 +68,15 @@ p { line-height: 1.6; }
 .app-shell { height: 100dvh; min-height: 460px; background: var(--canvas); color: var(--text); padding: 0 24px 18px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; }
 .app-header { min-height: 72px; flex-shrink: 0; display: flex; align-items: center; gap: 20px; }
 .brand { display: flex; align-items: center; gap: 10px; flex: 1; }
-.brand-mark { display: grid; place-items: center; width: 36px; height: 36px; background: #2563eb; color: #fff; font-size: 20px; font-weight: 700; border-radius: 11px; position: relative; }
+.brand-mark { display: grid; place-items: center; width: 36px; height: 36px; background: var(--brand-fill); color: #fff; font-size: 20px; font-weight: 700; border-radius: 11px; position: relative; }
 .brand-mark > span { font-size: 11px; background: var(--surface); color: var(--text); padding: 0 2px; border-radius: 3px; position: absolute; right: -3px; bottom: -2px; }
-.navigation { display: flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
-.navigation .el-button { border: 0; margin: 0; padding: 10px 18px; height: 34px; }
+.navigation { display: flex; flex-shrink: 0; }
 .theme-button { flex-shrink: 0; font-size: 20px; }
-.el-button--primary { --el-button-bg-color: #2563eb; --el-button-border-color: #2563eb; --el-button-text-color: #fff; --el-button-hover-bg-color: #1d4ed8; --el-button-hover-border-color: #1d4ed8; --el-button-active-bg-color: #1e40af; --el-button-active-border-color: #1e40af; }
+.el-button--primary { --el-button-bg-color: var(--action-fill); --el-button-border-color: var(--action-fill); --el-button-text-color: #fff; --el-button-hover-bg-color: var(--action-hover); --el-button-hover-border-color: var(--action-hover); --el-button-active-bg-color: var(--action-active); --el-button-active-border-color: var(--action-active); --el-button-disabled-bg-color: var(--action-fill); --el-button-disabled-border-color: var(--action-fill); }
+.el-button--primary.is-disabled { opacity: .42; }
 .el-button + .el-button { margin-left: 0; }
 .el-button { min-height: 34px; }
-.el-radio-button { --el-radio-button-checked-bg-color: #2563eb; --el-radio-button-checked-border-color: #2563eb; --el-radio-button-checked-text-color: #fff; }
+.el-radio-button { --el-radio-button-checked-bg-color: var(--action-fill); --el-radio-button-checked-border-color: var(--action-fill); --el-radio-button-checked-text-color: #fff; }
 .el-radio-button:focus-within { outline: 2px solid var(--el-color-primary); outline-offset: 3px; border-radius: 8px; }
 .el-textarea__inner, .el-input__inner { font-family: inherit; }
 .el-select__wrapper { min-height: 36px; }
@@ -72,7 +88,7 @@ p { line-height: 1.6; }
 .inline-field > span { white-space: nowrap; color: var(--muted); }
 .engine-field { margin-left: auto; }
 .engine-field .el-select { width: 140px; }
-.extension-input { width: 90px; }
+.extension-input { width: 148px; }
 .queue-panel, .password-panel, .page-surface { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
 .queue-panel { display: flex; flex-direction: column; flex: 1; min-height: 130px; overflow: hidden; }
 .panel-heading { min-height: 60px; padding: 12px 20px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
@@ -106,12 +122,11 @@ p { line-height: 1.6; }
 .status-title > span { white-space: nowrap; }
 .activity { overflow-wrap: anywhere; }
 .extraction-progress { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
-.extraction-progress > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2563eb, #397ee8); box-shadow: 0 0 7px #397ee836; }
+.extraction-progress > span { display: block; height: 100%; border-radius: inherit; background: var(--accent-line); }
 .extraction-progress.is-unknown > span { width: 28%; animation: activity 1.8s linear infinite; }
 .progress-caption { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 13px; }
 .progress-caption > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .progress-caption > strong, .progress-caption > span:last-child { flex-shrink: 0; font-weight: 500; }
-html.dark .extraction-progress > span { background: linear-gradient(90deg, #7eb0ff, #79c3f0); }
 .unknown-progress { height: 3px; border-radius: 4px; background: var(--line); overflow: hidden; }
 .unknown-progress > span { display: block; height: 100%; width: 28%; border-radius: inherit; background: var(--el-color-primary); animation: activity 1.8s linear infinite; }
 @keyframes activity { from { transform: translateX(-100%); } to { transform: translateX(460%); } }
@@ -144,7 +159,6 @@ html.dark .extraction-progress > span { background: linear-gradient(90deg, #7eb0
 @media (max-width: 850px) {
   .app-shell { padding: 0 14px 12px; }
   .app-header { gap: 12px; }
-  .navigation .el-button { padding: 8px 13px; }
   .mode-toolbar { gap: 10px 14px; }
   .engine-field { margin-left: 0; }
   .engine-field .el-select { width: 118px; }

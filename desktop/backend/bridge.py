@@ -203,8 +203,8 @@ class Bridge:
         self.idle()
         if mode not in ("extract", "rename", "restore") or engine_mode not in ("auto", "7z", "winrar"):
             raise ValueError("處理方式或引擎無效")
-        if mode != "extract" and not re.fullmatch(r"\.[A-Za-z0-9]{1,12}", extension):
-            raise ValueError("後綴必須以點開頭，並包含 1–12 個英數字")
+        if mode != "extract" and not re.fullmatch(r"\.[A-Za-z0-9]{1,12}(?:\.[A-Za-z0-9]{1,12}){0,2}", extension):
+            raise ValueError("後綴須以點開頭，每段限 1–12 個英數字，最多三段（例如 .zip、.tar.gz）")
         if not isinstance(passwords or [], list) or any(not isinstance(p, str) for p in (passwords or [])):
             raise ValueError("密碼格式無效")
         sources = [r for r in self.rows if r["status"] != "success"]
@@ -236,7 +236,7 @@ class Bridge:
                         try:
                             self.engine.check_cancel()
                             path = Path(source)
-                            target = path.with_suffix(extension)
+                            target = path if path.name.lower().endswith(extension.lower()) else path.with_suffix(extension)
                             if target != path:
                                 if target.exists():
                                     raise ValueError("目標文件已存在，未覆蓋")

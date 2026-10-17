@@ -1,0 +1,18 @@
+Auto7z 7.0.0 - Windows 10/11 x64
+
+Portable: extract the entire ZIP, then run Auto7z/Auto7z.exe.
+Keep resources beside Auto7z.exe. Python and 7-Zip are included.
+Single: run Single.exe directly. Its embedded runtime is verified and
+extracted to %LOCALAPPDATA%/Auto7z/Runtime/<version-and-hash>/ on first use.
+Both editions require Microsoft Edge WebView2 Runtime.
+Single also uses Windows .NET Framework 4.8 (included with supported
+Windows 10/11 installations). No Node.js, Rust or separate Python is needed.
+
+Settings: %APPDATA%/local.auto7z.element/settings.json
+This existing identifier is retained for settings compatibility.
+Passwords, queue and logs are session-only. Output files remain on disk.
+Bundled 7-Zip is selectable in Settings; WinRAR is not distributed.
+Changing a filename extension does not convert the archive format.
+
+Source, licenses, build instructions and release notes:
+https://github.com/MostimaJK/Auto7z

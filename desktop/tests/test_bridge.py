@@ -142,6 +142,23 @@ class BridgeTests(unittest.TestCase):
         self.assertEqual(checked, {'path_7z': True, 'path_rar': False})
         self.assertFalse(self.bridge.dispatch('check_tools', {'path_7z': str(self.path)})['path_7z'])
 
+    def test_custom_and_compound_extension_rename_and_invalid_paths(self):
+        source = self.path / 'original.data'; source.write_bytes(b'preserve content')
+        self.add([source], True)
+        for invalid in ['.zip/../other', '.tar..gz', '.', '.a b']:
+            with self.assertRaises(ValueError):
+                self.bridge.start(mode='rename', extension=invalid)
+            self.assertTrue(source.is_file())
+        self.run_batch(mode='rename', extension='.custom7')
+        renamed = source.with_suffix('.custom7')
+        self.assertEqual(renamed.read_bytes(), b'preserve content')
+        self.bridge.dispatch('remove', {'ids': [self.bridge.rows[0]['id']]})
+        compound = self.path / 'already.tar.gz'; compound.write_bytes(b'keep')
+        self.add([compound], True)
+        self.run_batch(mode='rename', extension='.tar.gz')
+        self.assertEqual(self.bridge.rows[0]['archive'], str(compound))
+        self.assertEqual(compound.read_bytes(), b'keep')
+
     def test_real_progress_reaches_frontend_events_without_becoming_batch_percent(self):
         source = self.archive('progress.zip', {'data.txt': 'content' * 1000000})
         self.add([source])

@@ -256,7 +256,7 @@ class Engine:
         output = None
         try:
             self.check_cancel()
-            if real_ext and current.suffix.lower() != real_ext.lower():
+            if real_ext and not current.name.lower().endswith(real_ext.lower()):
                 target = current.with_suffix(real_ext)
                 if target.exists():
                     raise RuntimeError("目標後綴文件已存在，請先處理同名文件")
