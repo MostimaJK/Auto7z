@@ -114,3 +114,13 @@ React／TypeScript → Tauri command → 獨立 Python JSON-lines 後台 → 原
 
 官方方向參考：https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass
 - 深色短窗口實測方向鍵Right由遞迴解壓切換至修改後綴，玻璃選中層與上下文表單同步，焦點環可見；檢查後主題恢復跟隨系統。
+
+# Memivo 風格 Vue 選擇器（2026-10-18，現行增量修訂）
+
+使用者選定 Memivo 中「正點／負點／框選／文字」的圓角分段選擇器，並要求只用 Vue，避免混入 React。已查閱 Memivo frontend/src/main.tsx:233 及本機 @react-spectrum/s2 1.8.2 的 SegmentedControl.tsx：官方使用200ms位置／寬度過渡、2px描邊與圓角選中層；未複製其React組件。
+
+本輪刪除 LiquidModeSwitch.vue，改為 ModeSwitch.vue：保留既有Element Plus Vue單選行為，在共同灰底上使用白色2px深色描邊選中塊，依實際項目寬度做200ms非彈性過渡，文字提供輕微按壓回饋。移除玻璃、漸層、高光、模糊與形變動畫。ResizeObserver及字體載入後重新量測，隱藏工作區時保留有效位置；沒有新增套件或框架。深色有獨立對應色，鍵盤焦點及減少動態效果保留。
+
+本輪僅調整選擇器，解壓引擎與真實進度協議未改動。Vue TypeScript／Vite、原生debug與release編譯通過；原生點選三種模式確認後綴與密碼區按上下文聯動，方向鍵Right由解壓切至修改後綴，焦點環可見。實機檢查正常與640×480窗口、淺／深色，標籤和主要操作可見。減少動態／強制色彩已提供CSS後備，未改動系統偏好做強制模式實測。
+
+來源為Vue獨立實作，不宣稱Adobe官方組件或像素級一致。回退分支codex/liquid-glass-progress；本輪codex/memivo-vue-selector。未新增依賴、未推送或發布。

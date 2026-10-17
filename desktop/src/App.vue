@@ -2,7 +2,7 @@
 import zhTw from 'element-plus/es/locale/lang/zh-tw';
 import type { Row } from './api';
 import { useDesktop } from './useDesktop';
-import LiquidModeSwitch from './LiquidModeSwitch.vue';
+import ModeSwitch from './ModeSwitch.vue';
 const { page, state, draft, tools, ready, working, error, settingError, logs, mode, extension, engineMode, passwords, filter, selected, detail, help, dragging, checkedTools, dark, busy, candidatePasswords, statuses, statusTypes, shown, counts, done, retry, canStart, useBundled, dirty, name, size, attempt, navigate, pick, remove, start, changeMode, browse, checkTools, saveSettings, resetDraft, toggleTheme, openResult, cancel, copyLogs } = useDesktop();
 </script>
 
@@ -22,7 +22,7 @@ const { page, state, draft, tools, ready, working, error, settingError, logs, mo
 
       <main v-show="page === 'work'" class="workspace-page">
         <section class="mode-toolbar" aria-label="處理方式">
-          <LiquidModeSwitch :model-value="mode" :disabled="busy" @update:model-value="changeMode" />
+          <ModeSwitch :model-value="mode" :disabled="busy" @update:model-value="changeMode" />
           <label v-if="mode !== 'extract'" class="inline-field"><span>目標後綴</span><el-input v-model="extension" aria-label="目標後綴" :disabled="busy" class="extension-input" /></label>
           <label v-if="mode !== 'rename'" class="inline-field engine-field"><span>引擎</span><el-select v-model="engineMode" aria-label="解壓引擎" :disabled="busy"><el-option label="自動選擇" value="auto" /><el-option label="7-Zip" value="7z" /><el-option label="WinRAR" value="winrar" /></el-select></label>
         </section>
