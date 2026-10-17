@@ -1,5 +1,7 @@
 # Auto7z Fluent
 
+本輪視覺修訂先使用根目錄 `Preview_Auto7z_Fluent.bat` 比較：官方 Dropdown、較圓潤的主題形態與重新分組的配置區。這個入口啟動已編譯的 debug 原生版本（需要現有 Python 環境），設定隔離保存於 artifacts/fluent-refinement-profile。原 `Start_Auto7z_Fluent.bat` 仍開啟上一版本地 release，暫不覆蓋，方便比較；預覽同樣連接真實解壓核心，沒有模擬任務。
+
 Microsoft `@fluentui/react-components` **9.74.9**、React **19.3.1**／TypeScript、Tauri **2.12.4**（CLI **2.12.3**）。透過私有 stdin/stdout JSON-lines 重用上層 `extraction.py`；沒有 HTTP 解壓服務、不載入 PyQt。Python／C++ 舊入口均保留。
 
 ## 啟動

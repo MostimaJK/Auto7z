@@ -54,3 +54,15 @@ React／TypeScript → Tauri command → 獨立 Python JSON-lines 後台 → 原
 - 最終 `Start_Auto7z_Fluent.bat` 已實際啟動 release，保留原生窗口供試用；前端開發伺服器已停止。最終淺／深色截圖為 `artifacts/fluent-final-light.png`、`artifacts/fluent-final-dark.png`。NSIS 本機產物約 10.85 MiB。
 
 佇列／結果紀錄僅保留本次工作階段；日誌最近 2,000 筆。位元組進度仍未知，未偽造。跨顯示器實際 DPI 切換與原生拖放尚未列為已驗證；縮放診斷不等同系統 DPI 實測。NSIS 已建置，不自動安裝到使用者系統。
+
+## 2026-10-18 小範圍視覺修訂
+
+使用者指出預設控件形態過於方正、原生 Select 彈層陳舊。本輪先提供可比較的獨立預覽，不覆蓋先前 release；入口為根目錄 `Preview_Auto7z_Fluent.bat`（debug 原生宿主，仍接真實 Python 後台，設定隔離至 artifacts/fluent-refinement-profile）。
+
+- 處理方式、引擎、設定外觀統一使用官方 Dropdown／Option，保留受控值、選中勾選、方向鍵與 Enter 選擇、Escape 關閉；不再使用原生 Select 彈層。
+- 以 Fluent tokens 做主題化：控件 10px、彈層 14px、主要表面 18px；選項 8px，柔和品牌選中底色。這是 Auto7z 的形態調整，不冒稱 Fluent 原始預設值。
+- 配置集中於隊列標題旁，固定標籤放在控件上方；移除無功能的 Fluent 標籤。空狀態圖示、標題與操作仍成組置中，底部狀態改成較輕的內嵌表面。
+- 未修改解壓核心、橋接協議或隊列行為，未安裝新依賴。
+- TypeScript／Vite 與 Tauri debug 編譯通過；原生窗口實際展開處理方式選單，方向鍵與 Enter 切換到「還原後綴並解壓」，目標後綴欄位隨之顯示。
+- 原生設定內的外觀 Dropdown 已檢查：彈層在 640×480 窗口內可見，Escape 只先關閉選單，設定對話框仍在。短窗口空狀態重排為居中的圖示／文字操作組合，沒有裁切或縮小字體；明暗兩種外觀已實際打開。
+- 本輪只修改前端視覺與選擇器，因此驗證限定為類型／建置、原生渲染及選擇器互動，沒有把先前真實解壓驗證當作本輪重新跑過的結果。截圖：artifacts/fluent-refined-dropdown.png、fluent-refined-short.png、fluent-refined-dark.png。
