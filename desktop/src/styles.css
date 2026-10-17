@@ -104,6 +104,18 @@ p { line-height: 1.6; }
 .empty-actions { display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap; justify-content: center; }
 .empty-actions .el-button { min-height: 38px; }
 .table-region { flex: 1; min-height: 0; }
+.queue-grip { display: grid; place-items: center; width: 28px; height: 34px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: grab; touch-action: none; user-select: none; }
+.queue-grip:hover { background: var(--brand-wash); color: var(--accent-ink); }
+.queue-grip:active { cursor: grabbing; }
+.queue-grip:disabled { opacity: .35; cursor: default; }
+.queue-grip:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+.drag-column .cell { padding: 0 !important; }
+.el-table .drop-before td { box-shadow: inset 0 2px var(--accent-line); }
+.el-table .drop-after td { box-shadow: inset 0 -2px var(--accent-line); }
+.queue-menu { position: fixed; z-index: 3000; display: flex; flex-direction: column; gap: 2px; padding: 6px; min-width: 188px; border: 1px solid var(--line); border-radius: 12px; background: var(--el-bg-color-overlay, var(--surface)); color: var(--text); box-shadow: 0 8px 28px #0002; }
+.queue-menu .el-button { justify-content: flex-start; padding: 8px 12px; }
+.queue-menu .el-button:focus-visible { outline: 2px solid var(--accent-line); outline-offset: -2px; }
+.menu-divider { height: 1px; background: var(--line); margin: 4px 6px; }
 .el-table { --el-table-header-bg-color: var(--canvas); --el-table-border-color: var(--line); --el-table-current-row-bg-color: var(--brand-wash); --el-table-row-hover-bg-color: var(--brand-wash); }
 .file-button { background: transparent; color: inherit; border: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; width: 100%; padding: 5px 0; cursor: pointer; }
 .file-name { font-weight: 600; }

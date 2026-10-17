@@ -77,18 +77,15 @@ export function useDesktop() {
   async function remove(ids: string[]) {
     await attempt(async () => { await rpc('remove', { ids }); selected.value = []; if (detail.value && ids.includes(detail.value.id)) detail.value = null; });
   }
+  const reorder = (ids: string[]) => attempt(() => rpc('reorder', { ids }));
+  const requeue = (ids: string[]) => attempt(() => rpc('requeue', { ids }));
   async function start() {
     await attempt(async () => { error.value = ''; extension.value = extension.value.trim(); if (extension.value && !extension.value.startsWith('.')) extension.value = '.' + extension.value; await rpc('start', { mode: mode.value, extension: extension.value, passwords: candidatePasswords.value, engine_mode: engineMode.value }); });
   }
   async function changeMode(value: string | number | boolean | undefined) {
     const next = String(value);
     if (next === mode.value) return;
-    if (done.value) {
-      try { await ElMessageBox.confirm('切換處理方式會清空目前佇列紀錄；磁碟文件與已完成結果會保留。', '切換處理方式', { confirmButtonText: '切換', cancelButtonText: '保留目前佇列' }); }
-      catch { return; }
-      try { await rpc('remove', { ids: state.value.rows.map(row => row.id) }); selected.value = []; detail.value = null; }
-      catch (e) { error.value = String(e); return; }
-    }
+    if (busy.value || !['extract', 'rename', 'restore'].includes(next)) return;
     mode.value = next; filter.value = 'all';
   }
   async function browse(key: 'path_7z' | 'path_rar') {
@@ -111,6 +108,8 @@ export function useDesktop() {
   }
   function resetDraft() { Object.assign(draft, settings.value); settingError.value = ''; checkedTools.value = null; }
   async function toggleTheme() { await attempt(async () => settings.value = await rpc('save', { ...settings.value, theme: dark.value ? 'light' : 'dark' })); }
+  const copyPath = (path: string) => attempt(() => navigator.clipboard.writeText(path));
+  const openRow = (row: Row) => attempt(() => rpc('open', { id: row.id }));
   const openResult = () => attempt(() => rpc('open', { id: detail.value!.id }));
   const cancel = () => attempt(() => rpc('cancel'));
   const copyLogs = () => attempt(() => navigator.clipboard.writeText(logs.value.join('\n')));
@@ -136,7 +135,7 @@ export function useDesktop() {
         if (event === 'error') error.value = data;
       });
       if (disposed) { disconnect(); return; } off.push(disconnect);
-      if (!native) { error.value = '瀏覽器僅供版面預覽。請使用 Start_Auto7z_Element.bat 處理本機文件。'; return; }
+      if (!native) { error.value = '瀏覽器僅供版面預覽。請使用 Start_Auto7z.bat 處理本機文件。'; return; }
       const init = await rpc<{ settings: Settings; state: State; warning: string; tools: typeof tools }>('init');
       settings.value = init.settings; Object.assign(draft, init.settings); Object.assign(tools, init.tools); state.value = init.state; ready.value = true;
       await getCurrentWindow().setTheme(dark.value ? 'dark' : 'light'); if (init.warning) error.value = init.warning;
@@ -156,5 +155,5 @@ export function useDesktop() {
     } catch (e) { error.value = String(e); }
   });
   onUnmounted(() => { disposed = true; off.forEach(fn => fn()); window.removeEventListener('keydown', onKey); });
-  return { page, state, settings, draft, tools, ready, working, error, settingError, logs, mode, extension, engineMode, passwords, filter, selected, detail, help, dragging, checkedTools, dark, busy, candidatePasswords, statuses, statusTypes, shown, counts, done, retry, canStart, useBundled, dirty, name, size, attempt, navigate, pick, remove, start, changeMode, browse, checkTools, saveSettings, resetDraft, toggleTheme, openResult, cancel, copyLogs };
+  return { page, state, settings, draft, tools, ready, working, error, settingError, logs, mode, extension, engineMode, passwords, filter, selected, detail, help, dragging, checkedTools, dark, busy, candidatePasswords, statuses, statusTypes, shown, counts, done, retry, canStart, useBundled, dirty, name, size, attempt, navigate, pick, remove, reorder, requeue, start, changeMode, browse, checkTools, saveSettings, resetDraft, toggleTheme, openResult, cancel, copyLogs, copyPath, openRow };
 }

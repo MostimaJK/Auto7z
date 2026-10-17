@@ -297,6 +297,28 @@ class Bridge:
             self.rows = [r for r in self.rows if r["id"] not in args["ids"]]
             self.completed = self.total = 0
             self.publish()
+        elif op == "reorder":
+            self.idle()
+            ids = args.get("ids")
+            known = {r["id"]: r for r in self.rows}
+            if not isinstance(ids, list) or any(not isinstance(i, str) for i in ids) or len(ids) != len(known) or set(ids) != set(known):
+                raise ValueError("排序必須包含目前佇列的每個文件，且不得重複")
+            with self.lock:
+                self.rows = [known[i] for i in ids]
+            self.publish()
+        elif op == "requeue":
+            self.idle()
+            ids = args.get("ids")
+            if not isinstance(ids, list) or any(not isinstance(i, str) for i in ids) or not set(ids).issubset({r["id"] for r in self.rows}):
+                raise ValueError("請選擇目前佇列中的文件")
+            with self.lock:
+                for row in self.rows:
+                    if row["id"] in ids:
+                        row["status"] = "pending"
+                self.completed = self.total = 0
+                self.progress = None
+                self.activity = "準備就緒"
+            self.publish()
         elif op == "save":
             self.idle()
             data = self.validate(args)

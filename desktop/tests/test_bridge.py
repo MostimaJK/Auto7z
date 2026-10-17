@@ -63,6 +63,53 @@ class BridgeTests(unittest.TestCase):
         self.assertEqual(self.bridge.total, 1)
         self.assertEqual(self.bridge.completed, 1)
 
+    def test_queue_order_drives_real_execution_and_remove_preserves_files(self):
+        self.add([self.archive('first.zip'), self.archive('second.zip'), self.archive('third.zip')])
+        ids = [r['id'] for r in self.bridge.rows][::-1]
+        self.bridge.dispatch('reorder', {'ids': ids})
+        self.events.clear()
+        self.run_batch()
+        active = [e['data']['current'] for e in self.events if e.get('event') == 'state' and e['data']['current']]
+        self.assertEqual(list(dict.fromkeys(active)), ids)
+        sources = [Path(r['source']) for r in self.bridge.rows]
+        outputs = [Path(r['output']) for r in self.bridge.rows]
+        self.bridge.dispatch('remove', {'ids': ids})
+        self.assertEqual(self.bridge.rows, [])
+        self.assertTrue(all(p.exists() for p in sources + outputs))
+
+    def test_requeue_renamed_file_can_extract_without_losing_result(self):
+        self.add([self.archive('disguised.data')], True)
+        self.run_batch(mode='rename', extension='.zip')
+        row = self.bridge.rows[0]
+        renamed = row['archive']
+        self.bridge.dispatch('requeue', {'ids': [row['id']]})
+        self.assertEqual(row['status'], 'pending')
+        self.run_batch(mode='extract')
+        output = row['output']
+        self.assertEqual(row['status'], 'success', row['detail'])
+        self.assertEqual((Path(output) / '文件.txt').read_text(), 'hello')
+        self.bridge.dispatch('requeue', {'ids': [row['id']]})
+        self.assertEqual(row['archive'], renamed)
+        self.assertEqual(row['output'], output)
+        self.assertTrue(Path(output).is_dir())
+
+    def test_queue_edits_validate_ids_and_reject_active_jobs(self):
+        self.add([self.archive('one.zip'), self.archive('two.zip')])
+        ids = [r['id'] for r in self.bridge.rows]
+        for invalid in [None, [ids[0]], [ids[0], ids[0]], [ids[0], 'unknown'], [[ids[0]], ids[1]]]:
+            with self.assertRaises(ValueError):
+                self.bridge.dispatch('reorder', {'ids': invalid})
+            self.assertEqual([r['id'] for r in self.bridge.rows], ids)
+        with self.assertRaises(ValueError):
+            self.bridge.dispatch('requeue', {'ids': ['unknown']})
+        self.bridge.busy = True
+        try:
+            for op in ['reorder', 'remove', 'requeue']:
+                with self.assertRaises(ValueError):
+                    self.bridge.dispatch(op, {'ids': ids})
+        finally:
+            self.bridge.busy = False
+
     def test_restore_partial_retry_uses_renamed_archive(self):
         disguised = self.archive('偽裝.png', {'bad.zip': b'broken'})
         self.add([disguised], True)

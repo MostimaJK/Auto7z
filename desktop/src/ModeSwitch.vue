@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-const props = defineProps<{ modelValue: string; disabled?: boolean; items?: readonly { value: string; label: string }[]; label?: string; compact?: boolean }>();
+const props = defineProps<{ modelValue: string; disabled?: boolean; items?: readonly { value: string; label: string; disabled?: boolean }[]; label?: string; compact?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
 const modes = computed(() => props.items || [{ value: 'extract', label: '遞迴解壓' }, { value: 'rename', label: '修改後綴' }, { value: 'restore', label: '改後綴並解壓' }]);
 const track = ref<HTMLElement>();
@@ -30,7 +30,7 @@ onUnmounted(() => observer?.disconnect());
   <div ref="track" class="mode-switch" :class="{ 'is-disabled': disabled, 'is-compact': compact }">
     <span v-show="measured" class="mode-switch__selection" :style="indicator" aria-hidden="true" />
     <el-radio-group :model-value="modelValue" :disabled="disabled" class="mode-switch__options" :aria-label="label || '處理方式'" @update:model-value="(value: string | number | boolean | undefined) => emit('update:modelValue', String(value))">
-      <el-radio-button v-for="mode in modes" :key="mode.value" :value="mode.value">{{ mode.label }}</el-radio-button>
+      <el-radio-button v-for="mode in modes" :key="mode.value" :value="mode.value" :disabled="'disabled' in mode && !!mode.disabled">{{ mode.label }}</el-radio-button>
     </el-radio-group>
   </div>
 </template>
