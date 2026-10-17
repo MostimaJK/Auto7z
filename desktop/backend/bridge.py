@@ -10,6 +10,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2] if not getattr(sys, "frozen", False) else Path(sys.executable).parent
+BUNDLED_7Z = ROOT / "7z.exe" if getattr(sys, "frozen", False) else ROOT / "tools/7zip/7z.exe"
 sys.path.insert(0, str(ROOT))
 from extraction import Engine
 
@@ -62,7 +63,7 @@ class Bridge:
                 self.warning = f"設定讀取失敗，已使用預設值：{e}"
         for key, executable, subdir in (("path_7z", "7z.exe", "7-Zip"), ("path_rar", "WinRAR.exe", "WinRAR")):
             if not self.settings[key]:
-                candidates = [ROOT / executable, Path(os.environ.get("ProgramFiles", "C:/Program Files")) / subdir / executable]
+                candidates = [BUNDLED_7Z if key == "path_7z" else ROOT / executable, Path(os.environ.get("ProgramFiles", "C:/Program Files")) / subdir / executable]
                 self.settings[key] = next((str(p) for p in candidates if p.is_file()), "")
         self.rows = []
         self.busy = False
@@ -275,7 +276,7 @@ class Bridge:
     def dispatch(self, op, args):
         if op == "init":
             return dict(settings=self.settings, state=self.state(), warning=self.warning,
-                        tools=dict(bundled_7z=str(ROOT / "7z.exe"), bundled_7z_exists=(ROOT / "7z.exe").is_file(), settings_file=str(self.config)))
+                        tools=dict(bundled_7z=str(BUNDLED_7Z), bundled_7z_exists=BUNDLED_7Z.is_file(), settings_file=str(self.config)))
         if op == "check_tools":
             return {key: bool(isinstance(args.get(key), str) and args[key] and Path(args[key]).is_file()) for key in ("path_7z", "path_rar")}
         if op == "add":

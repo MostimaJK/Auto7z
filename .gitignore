@@ -26,3 +26,8 @@ desktop/src-tauri/target/
 desktop/src-tauri/resources/
 desktop/.build/
 desktop/src-tauri/gen/
+
+# Retained local legacy paths; tracked distributions live in tools/ and assets/.
+/7z.exe
+/7z.dll
+/Auto7z.ico

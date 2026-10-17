@@ -48,7 +48,7 @@ def package():
         script.write_text(source, encoding='utf-8-sig')
         subprocess.run([str(compiler), '/nologo', '/optimize+', '/target:winexe', '/platform:x64',
                         '/reference:System.Windows.Forms.dll', '/reference:System.IO.Compression.dll',
-                        '/reference:System.IO.Compression.FileSystem.dll', '/win32icon:' + str(ROOT / 'Auto7z.ico'),
+                        '/reference:System.IO.Compression.FileSystem.dll', '/win32icon:' + str(ROOT / 'assets/Auto7z.ico'),
                         '/resource:' + str(archive_path) + ',Payload.zip', '/out:' + str(single), str(script)], check=True)
     artifacts = [single, archive_path]
     setup = native / 'bundle/nsis' / f'Auto7z_{version}_x64-setup.exe'

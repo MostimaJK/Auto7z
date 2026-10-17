@@ -2,10 +2,16 @@
 
 日期：2026-10-18。目標：Windows 10／11 x64；本機實測Windows 11，未宣稱全部Windows版本、DPI或硬件均已覆蓋。
 
+## 同版本附件更新
+
+2026-10-18重新建置Single、Portable與Setup，版本號保持7.0.0。核心16項、橋接19項測試通過。兩種便攜包各自執行其中的後台及7-Zip，新增驗證reorder、requeue與remove：順序正確、已完成項可顯式重新處理、清空列表後原包和先前結果保留；完整內容、快取修復與SHA256檢查也通過。
+
+來源內置工具移至tools/7zip、圖示移至assets；二進位內容未修改。已安裝設定與發行包resources結構維持原樣。本輪未重新進行原生右鍵／拖動驗收，前次中斷不計為通過；也未執行Setup安裝／卸載。下列原生窗口記錄屬首次7.0.0驗證，不能當作附件更新後的全部交互驗收。
+
 ## 自動檢查
 
 - `python -m unittest discover -s tests -v`：16項通過。
-- `python -m unittest discover -s desktop/tests -v`：16項通過。
+- `python -m unittest discover -s desktop/tests -v`：更新後19項通過。
 - Vue TypeScript、Vite、Rust release、獨立PyInstaller後台與NSIS建置通過。
 - `scripts/verify_release.py`對兩種發行包分別啟動其中攜帶的後台與7-Zip，與開發Python核心分開驗證：真實加密／多密碼、嵌套ZIP內容、損壞包失敗、修復後只重試失敗項，原成功目錄不變。
 - Portable內容符合明確允許清單，逐檔雜湊及三種發行檔SHA256一致，沒有使用者設定、WinRAR、照片或Qt檔案。另檢查PyInstaller外層TOC，未發現PyQt／PySide／QFluent項目。

@@ -30,7 +30,7 @@
       "nsis"
     ],
     "icon": [
-      "../../Auto7z.ico"
+      "../../assets/Auto7z.ico"
     ],
     "resources": [
       "resources/**/*"

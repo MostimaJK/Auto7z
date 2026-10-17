@@ -22,7 +22,7 @@ class ExtractionTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="auto7z-tests-")
         self.folder = Path(self.temp.name)
-        self.engine = Engine(str(ROOT / "7z.exe"), WINRAR)
+        self.engine = Engine(str(ROOT / "tools/7zip/7z.exe"), WINRAR)
 
     def tearDown(self):
         self.temp.cleanup()
@@ -112,7 +112,7 @@ class ExtractionTests(unittest.TestCase):
         source = self.folder / "secret.txt"
         source.write_text("private data")
         archive = self.folder / "encrypted.7z"
-        subprocess.run([str(ROOT / "7z.exe"), "a", "-psecret", "-mhe=on", str(archive), str(source)],
+        subprocess.run([str(ROOT / "tools/7zip/7z.exe"), "a", "-psecret", "-mhe=on", str(archive), str(source)],
                        check=True, stdout=subprocess.DEVNULL)
         self.engine.passwords = ["wrong", "secret"]
         result = self.engine.process(archive)
@@ -125,7 +125,7 @@ class ExtractionTests(unittest.TestCase):
         source = self.folder / "secret.txt"
         source.write_text("private")
         archive = self.folder / "disguised.png"
-        subprocess.run([str(ROOT / "7z.exe"), "a", "-t7z", "-psecret", str(archive), str(source)],
+        subprocess.run([str(ROOT / "tools/7zip/7z.exe"), "a", "-t7z", "-psecret", str(archive), str(source)],
                        check=True, stdout=subprocess.DEVNULL)
         self.engine.passwords = ["wrong"]
         result = self.engine.process(archive, ".7z")

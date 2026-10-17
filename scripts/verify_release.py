@@ -81,7 +81,21 @@ def exercise_backend(app, folder):
         assert state['total'] == 1 and all(row['status'] == 'success' for row in state['rows']), state
         assert state['rows'][0]['output'] == first
         assert any(event.get('event') == 'progress' and event['data']['percent'] is not None for event in events)
-        return dict(batch_success=2, expected_failure=1, retry_success=1, nested_content=True, multi_password=True)
+        original_outputs = [Path(row['output']) for row in state['rows']]
+        ids = [row['id'] for row in state['rows']][::-1]
+        rpc('reorder', dict(ids=ids)); state = idle_state()
+        assert [row['id'] for row in state['rows']] == ids
+        rpc('requeue', dict(ids=[ids[0]])); state = idle_state()
+        assert state['rows'][0]['status'] == 'pending'
+        assert state['rows'][0]['output'] == str(original_outputs[2])
+        rpc('start'); state = idle_state()
+        assert state['total'] == 1 and state['rows'][0]['status'] == 'success'
+        assert (Path(state['rows'][0]['output']) / 'fixed.txt').read_text() == 'retry'
+        rpc('remove', dict(ids=ids)); state = idle_state()
+        assert not state['rows'] and all(path.is_dir() for path in original_outputs)
+        assert all(path.is_file() for path in [plain, encrypted, broken])
+        return dict(batch_success=2, expected_failure=1, retry_success=1, nested_content=True,
+                    multi_password=True, queue_reorder=True, explicit_requeue=True, clear_preserves_files=True)
     finally:
         process.stdin.close()
         try: process.wait(timeout=10)

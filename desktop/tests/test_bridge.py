@@ -24,7 +24,7 @@ class BridgeTests(unittest.TestCase):
         self.path = Path(self.temp.name)
         self.events = []
         self.bridge = bridge.Bridge(self.events.append, self.path / 'config/settings.json')
-        self.bridge.settings['path_7z'] = str(ROOT / '7z.exe')
+        self.bridge.settings['path_7z'] = str(ROOT / 'tools/7zip/7z.exe')
         self.bridge.settings['path_rar'] = ''
 
     def tearDown(self):
@@ -135,7 +135,7 @@ class BridgeTests(unittest.TestCase):
     def test_actual_split_archive_and_password_candidates(self):
         source = self.path / 'private.txt'; source.write_text('private content' * 1000)
         packed = self.path / 'split.7z'
-        subprocess.run([str(ROOT / '7z.exe'), 'a', '-v100b', '-psecret', '-mhe=on', str(packed), str(source)], check=True, stdout=subprocess.DEVNULL)
+        subprocess.run([str(ROOT / 'tools/7zip/7z.exe'), 'a', '-v100b', '-psecret', '-mhe=on', str(packed), str(source)], check=True, stdout=subprocess.DEVNULL)
         self.add([self.path])
         self.run_batch(passwords=['wrong', 'secret'])
         self.assertEqual(len(self.bridge.rows), 1)
@@ -184,8 +184,8 @@ class BridgeTests(unittest.TestCase):
     def test_tool_metadata_and_path_checks(self):
         reply = self.bridge.dispatch('init', {})
         self.assertTrue(reply['tools']['bundled_7z_exists'])
-        self.assertEqual(Path(reply['tools']['bundled_7z']), ROOT / '7z.exe')
-        checked = self.bridge.dispatch('check_tools', {'path_7z': str(ROOT / '7z.exe'), 'path_rar': str(self.path / 'missing.exe')})
+        self.assertEqual(Path(reply['tools']['bundled_7z']), ROOT / 'tools/7zip/7z.exe')
+        checked = self.bridge.dispatch('check_tools', {'path_7z': str(ROOT / 'tools/7zip/7z.exe'), 'path_rar': str(self.path / 'missing.exe')})
         self.assertEqual(checked, {'path_7z': True, 'path_rar': False})
         self.assertFalse(self.bridge.dispatch('check_tools', {'path_7z': str(self.path)})['path_7z'])
 
