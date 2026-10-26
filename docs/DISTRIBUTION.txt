@@ -16,3 +16,9 @@ Changing a filename extension does not convert the archive format.
 
 Source, licenses, build instructions and release notes:
 https://github.com/MostimaJK/Auto7z
+
+The default mode is Rename and extract. Settings offers Simplified Chinese,
+Traditional Chinese and English, with a saved language preference.
+Archive cleanup has separate nested/source switches. Source deletion is off
+by default and only runs after complete extraction success. Clearing the
+queue does not delete files; Open folder opens the latest successful output.

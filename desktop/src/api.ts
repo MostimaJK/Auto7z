@@ -4,8 +4,8 @@ import { listen } from '@tauri-apps/api/event';
 export type Status = 'pending' | 'running' | 'success' | 'partial' | 'failed' | 'cancelled';
 export interface Row { id: string; source: string; size: number; status: Status; output: string; detail: string; archive: string }
 export interface ExtractionProgress { percent: number | null; archive: string; tool: string; attempt: number }
-export interface State { rows: Row[]; busy: boolean; scanning: boolean; stopping: boolean; activity: string; current: string | null; completed: number; total: number; progress?: ExtractionProgress | null }
-export interface Settings { path_7z: string; path_rar: string; max_recursion_depth: number; idle_timeout_seconds: number; timeout_7z_precheck: number; delete_after_extract: boolean; theme: 'system' | 'light' | 'dark' }
+export interface State { rows: Row[]; busy: boolean; scanning: boolean; stopping: boolean; activity: string; current: string | null; completed: number; total: number; progress?: ExtractionProgress | null; latest_output?: string; batch_counts?: Record<'success' | 'partial' | 'failed' | 'cancelled', number> | null }
+export interface Settings { path_7z: string; path_rar: string; max_recursion_depth: number; idle_timeout_seconds: number; timeout_7z_precheck: number; delete_after_extract: boolean; delete_source_archive: boolean; language: 'zh-CN' | 'zh-TW' | 'en'; theme: 'system' | 'light' | 'dark' }
 type Event = { event?: string; id?: number; ok?: boolean; data?: unknown; error?: string };
 let seq = 0;
 const pending = new Map<number, { resolve: (v: any) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> }>();

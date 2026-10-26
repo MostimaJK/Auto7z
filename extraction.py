@@ -27,11 +27,12 @@ class Result:
 class Engine:
     def __init__(self, path_7z, path_rar, passwords=(), mode="auto", depth=20,
                  delete_inner=False, idle_timeout=0, precheck_timeout=30,
-                 notify=None, progress=None):
+                 notify=None, progress=None, delete_source=False):
         self.tools = {"7z": path_7z, "winrar": path_rar}
         self.passwords = list(dict.fromkeys(p for p in passwords if p))
         self.mode, self.depth = mode, depth
         self.delete_inner, self.idle_timeout = delete_inner, idle_timeout
+        self.delete_source = delete_source
         self.precheck_timeout = precheck_timeout
         self.notify = notify or (lambda message: None)
         self.progress = progress or (lambda data: None)
@@ -250,21 +251,76 @@ class Engine:
                 if not path.is_symlink() and Engine.is_archive(path):
                     yield path
 
+    @staticmethod
+    def archive_snapshot(source):
+        """Capture only an exact, contiguous archive family, never a broad glob delete."""
+        source = Path(source)
+        name = source.name
+        pattern, first = None, 1
+        split = re.fullmatch(r"(.+)\.(001)", name, re.I)
+        part = re.fullmatch(r"(.+\.part)(0*1)(\.rar)", name, re.I)
+        if split:
+            pattern = re.compile(re.escape(split[1]) + r"\.(\d{3})", re.I)
+        elif part:
+            pattern = re.compile(re.escape(part[1]) + r"(\d{" + str(len(part[2])) + r"})" + re.escape(part[3]), re.I)
+        elif source.suffix.lower() in ('.rar', '.zip'):
+            first = 0 if source.suffix.lower() == '.rar' else 1
+            letter = 'r' if first == 0 else 'z'
+            pattern = re.compile(re.escape(source.stem) + r"\." + letter + r"(\d{2})", re.I)
+        numbered = []
+        if pattern:
+            for path in source.parent.iterdir():
+                match = pattern.fullmatch(path.name)
+                if match:
+                    numbered.append((int(match[1]), path))
+        numbered.sort()
+        if numbered and [number for number, _ in numbered] != list(range(first, first + len(numbered))):
+            raise ValueError('分卷序號不連續；未刪除壓縮文件')
+        members = [path for _, path in numbered if path != source] + [source]
+        snapshot = []
+        for path in members:
+            if path.is_symlink() or not path.is_file():
+                raise ValueError(f'不是可清理的普通壓縮文件：{path}')
+            stat = path.stat()
+            snapshot.append((path, (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns)))
+        return snapshot
+
+    def remove_archive(self, snapshot):
+        self.check_cancel()
+        for path, expected in snapshot:
+            stat = path.stat()
+            if path.is_symlink() or (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns) != expected:
+                raise ValueError(f'壓縮文件已變更，未刪除：{path}')
+        # Check the whole family before deleting anything; retain the entry volume until last.
+        for path, _ in snapshot:
+            path.unlink()
+            self.notify(f'已刪除壓縮文件：{path}')
+
     def process(self, source, real_ext=""):
         original = Path(source).absolute()
         current = original
         output = None
         try:
             self.check_cancel()
-            if real_ext and not current.name.lower().endswith(real_ext.lower()):
+            is_volume = bool(re.search(r'\.001$|\.part0*1\.rar$', current.name, re.I)) or (
+                current.suffix.lower() == '.rar' and current.with_suffix('.r00').exists()) or (
+                current.suffix.lower() == '.zip' and current.with_suffix('.z01').exists())
+            if real_ext and not is_volume and not current.name.lower().endswith(real_ext.lower()):
                 target = current.with_suffix(real_ext)
                 if target.exists():
                     raise RuntimeError("目標後綴文件已存在，請先處理同名文件")
                 current.rename(target)
                 current = target
+            cleanup_error = ''
+            source_snapshot = None
+            if self.delete_source:
+                try:
+                    source_snapshot = self.archive_snapshot(current)
+                except (OSError, ValueError) as error:
+                    cleanup_error = f'來源清理未完成：{error}'
             output = self.extract(current)
             queue = deque((p, 2) for p in self._scan(output))
-            issues = []
+            issues = [cleanup_error] if cleanup_error else []
             while queue:
                 self.check_cancel()
                 inner, depth = queue.popleft()
@@ -273,14 +329,23 @@ class Engine:
                     continue
                 try:
                     self.notify(f"第 {depth} 層 · {inner.name}")
+                    inner_snapshot = self.archive_snapshot(inner) if self.delete_inner else None
                     inner_output = self.extract(inner)
                     queue.extend((p, depth + 1) for p in self._scan(inner_output))
                     if self.delete_inner:
-                        inner.unlink()
+                        self.remove_archive(inner_snapshot)
                 except Cancelled:
                     raise
                 except Exception as error:
                     issues.append(f"{inner.name}: {error}")
+            self.check_cancel()
+            if self.delete_source and not issues and source_snapshot:
+                try:
+                    self.remove_archive(source_snapshot)
+                except Cancelled:
+                    raise
+                except (OSError, ValueError) as error:
+                    issues.append(f'來源清理未完成：{error}')
             result = Result(str(original), "partial" if issues else "success", str(output), "\n".join(issues), str(current))
             return result
         except Cancelled:

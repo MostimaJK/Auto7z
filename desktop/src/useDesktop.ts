@@ -1,3 +1,4 @@
+import { t, uiLanguage } from './i18n';
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -8,8 +9,8 @@ import { connect, native, rpc, type Row, type State, type Settings } from './api
 export function useDesktop() {
   type Page = 'work' | 'logs' | 'settings';
   const page = ref<Page>('work');
-  const state = ref<State>({ rows: [], busy: false, scanning: false, stopping: false, current: null, activity: '準備就緒', completed: 0, total: 0 });
-  const defaults: Settings = { path_7z: '', path_rar: '', max_recursion_depth: 20, idle_timeout_seconds: 0, timeout_7z_precheck: 30, delete_after_extract: false, theme: 'system' };
+  const state = ref<State>({ rows: [], busy: false, scanning: false, stopping: false, current: null, activity: t('準備就緒'), completed: 0, total: 0 });
+  const defaults: Settings = { path_7z: '', path_rar: '', max_recursion_depth: 20, idle_timeout_seconds: 0, timeout_7z_precheck: 30, delete_after_extract: false, delete_source_archive: false, language: 'zh-TW', theme: 'system' };
   const settings = ref<Settings>({ ...defaults });
   const draft = reactive<Settings>({ ...defaults });
   const tools = reactive({ bundled_7z: '', bundled_7z_exists: false, settings_file: '' });
@@ -18,7 +19,7 @@ export function useDesktop() {
   const error = ref('');
   const settingError = ref('');
   const logs = ref<string[]>([]);
-  const mode = ref('extract');
+  const mode = ref('restore');
   const extension = ref('.zip');
   const engineMode = ref('auto');
   const passwords = ref('');
@@ -32,11 +33,11 @@ export function useDesktop() {
   const dark = computed(() => settings.value.theme === 'dark' || (settings.value.theme === 'system' && systemDark.value));
   const busy = computed(() => working.value || state.value.busy || state.value.scanning);
   const candidatePasswords = computed(() => [...new Set(passwords.value.split(/[\n,，]/).map(s => s.trim()).filter(Boolean))]);
-  const statuses: Record<Row['status'], string> = { pending: '待處理', running: '處理中', success: '成功', partial: '部分完成', failed: '失敗', cancelled: '已取消' };
+  const statuses = computed<Record<Row['status'], string>>(() => ({ pending: t('待處理'), running: t('處理中'), success: t('成功'), partial: t('部分完成'), failed: t('失敗'), cancelled: t('已取消') }));
   const statusTypes: Record<Row['status'], 'primary' | 'success' | 'warning' | 'danger' | 'info'> = { pending: 'info', running: 'primary', success: 'success', partial: 'warning', failed: 'danger', cancelled: 'info' };
   const shown = computed(() => state.value.rows.filter(r => filter.value === 'all' || (filter.value === 'pending' ? ['pending', 'running'].includes(r.status) : !['pending', 'running'].includes(r.status))));
-  const counts = computed(() => ({ success: state.value.rows.filter(r => r.status === 'success').length, partial: state.value.rows.filter(r => r.status === 'partial').length, failed: state.value.rows.filter(r => r.status === 'failed').length, cancelled: state.value.rows.filter(r => r.status === 'cancelled').length }));
-  const done = computed(() => state.value.rows.filter(r => !['pending', 'running'].includes(r.status)).length);
+  const counts = computed(() => (!state.value.busy && state.value.batch_counts) || ({ success: state.value.rows.filter(r => r.status === 'success').length, partial: state.value.rows.filter(r => r.status === 'partial').length, failed: state.value.rows.filter(r => r.status === 'failed').length, cancelled: state.value.rows.filter(r => r.status === 'cancelled').length }));
+  const done = computed(() => !state.value.busy && state.value.batch_counts ? state.value.completed : state.value.rows.filter(r => !['pending', 'running'].includes(r.status)).length);
   const retry = computed(() => state.value.rows.some(r => ['partial', 'failed', 'cancelled'].includes(r.status)));
   const canStart = computed(() => state.value.rows.some(r => r.status !== 'success'));
   const customSeven = ref('');
@@ -48,6 +49,8 @@ export function useDesktop() {
   const name = (path: string) => path.split(/[\\/]/).pop() || path;
   const size = (value: number) => value < 1024 ? `${value} B` : value < 1048576 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1048576).toFixed(1)} MB`;
 
+  watch([page, () => draft.language, () => settings.value.language], () => { uiLanguage.value = page.value === 'settings' ? draft.language : settings.value.language; }, { immediate: true });
+  watch(uiLanguage, value => document.documentElement.lang = value, { immediate: true });
   watch(dark, value => {
     document.documentElement.classList.toggle('dark', value);
     if (native && ready.value) void getCurrentWindow().setTheme(value ? 'dark' : 'light').catch(e => error.value = String(e));
@@ -56,13 +59,13 @@ export function useDesktop() {
 
   async function attempt(action: () => Promise<unknown>) {
     try { working.value = true; await action(); }
-    catch (e) { error.value = e instanceof Error ? e.message : String(e); }
+    catch (e) { error.value = t(e instanceof Error ? e.message : String(e)); }
     finally { working.value = false; }
   }
   async function navigate(next: Page) {
     if (next === page.value) return;
     if (page.value === 'settings' && dirty.value) {
-      try { await ElMessageBox.confirm('尚有未儲存的設定，是否捨棄？', '離開設定', { confirmButtonText: '捨棄變更', cancelButtonText: '繼續編輯', type: 'warning' }); }
+      try { await ElMessageBox.confirm(t('尚有未儲存的設定，是否捨棄？'), t('離開設定'), { confirmButtonText: t('捨棄變更'), cancelButtonText: t('繼續編輯'), type: 'warning' }); }
       catch { return; }
     }
     if (next === 'settings') { Object.assign(draft, settings.value); customSeven.value = draft.path_7z === tools.bundled_7z ? '' : draft.path_7z; settingError.value = ''; checkedTools.value = null; }
@@ -70,7 +73,7 @@ export function useDesktop() {
   }
   async function pick(folder = false) {
     await attempt(async () => {
-      const paths = await open({ directory: folder, multiple: true, title: folder ? '加入資料夾' : '加入文件' });
+      const paths = await open({ directory: folder, multiple: true, title: folder ? t('加入資料夾') : t('加入文件') });
       if (paths) await rpc('add', { paths: Array.isArray(paths) ? paths : [paths], include_all: mode.value !== 'extract' });
     });
   }
@@ -80,7 +83,7 @@ export function useDesktop() {
   const reorder = (ids: string[]) => attempt(() => rpc('reorder', { ids }));
   const requeue = (ids: string[]) => attempt(() => rpc('requeue', { ids }));
   async function start() {
-    await attempt(async () => { error.value = ''; extension.value = extension.value.trim(); if (extension.value && !extension.value.startsWith('.')) extension.value = '.' + extension.value; await rpc('start', { mode: mode.value, extension: extension.value, passwords: candidatePasswords.value, engine_mode: engineMode.value }); });
+    await attempt(async () => { error.value = ''; extension.value = extension.value.trim(); if (extension.value && !extension.value.startsWith('.')) extension.value = '.' + extension.value; await rpc('start', { mode: mode.value, extension: extension.value, passwords: candidatePasswords.value, engine_mode: engineMode.value, clear_success: true }); });
   }
   async function changeMode(value: string | number | boolean | undefined) {
     const next = String(value);
@@ -90,7 +93,7 @@ export function useDesktop() {
   }
   async function browse(key: 'path_7z' | 'path_rar') {
     await attempt(async () => {
-      const path = await open({ directory: false, multiple: false, title: key === 'path_7z' ? '選擇 7-Zip 執行檔' : '選擇 WinRAR 執行檔', filters: [{ name: '執行檔', extensions: ['exe'] }] });
+      const path = await open({ directory: false, multiple: false, title: key === 'path_7z' ? t('選擇 7-Zip 執行檔') : t('選擇 WinRAR 執行檔'), filters: [{ name: t('執行檔'), extensions: ['exe'] }] });
       if (typeof path === 'string') { draft[key] = path; if (key === 'path_7z') customSeven.value = path; }
     });
   }
@@ -99,17 +102,18 @@ export function useDesktop() {
     working.value = true; settingError.value = '';
     try {
       draft.path_7z = draft.path_7z.trim(); draft.path_rar = draft.path_rar.trim(); await checkTools();
-      if (!checkedTools.value?.path_7z && !checkedTools.value?.path_rar) throw new Error('請至少指定一個可用的解壓執行檔。');
-      if (draft.path_7z && !checkedTools.value?.path_7z) throw new Error('7-Zip 路徑不存在，請重新選擇。');
-      if (draft.path_rar && !checkedTools.value?.path_rar) throw new Error('WinRAR 路徑不存在，請重新選擇。');
-      const saved = await rpc<Settings>('save', { ...draft }); settings.value = saved; Object.assign(draft, saved); ElMessage.success('設定已儲存');
-    } catch (e) { settingError.value = e instanceof Error ? e.message : String(e); }
+      if (!checkedTools.value?.path_7z && !checkedTools.value?.path_rar) throw new Error(t('請至少指定一個可用的解壓執行檔。'));
+      if (draft.path_7z && !checkedTools.value?.path_7z) throw new Error(t('7-Zip 路徑不存在，請重新選擇。'));
+      if (draft.path_rar && !checkedTools.value?.path_rar) throw new Error(t('WinRAR 路徑不存在，請重新選擇。'));
+      const saved = await rpc<Settings>('save', { ...draft }); settings.value = saved; Object.assign(draft, saved); ElMessage.success(t('設定已儲存'));
+    } catch (e) { settingError.value = t(e instanceof Error ? e.message : String(e)); }
     finally { working.value = false; }
   }
   function resetDraft() { Object.assign(draft, settings.value); settingError.value = ''; checkedTools.value = null; }
   async function toggleTheme() { await attempt(async () => settings.value = await rpc('save', { ...settings.value, theme: dark.value ? 'light' : 'dark' })); }
   const copyPath = (path: string) => attempt(() => navigator.clipboard.writeText(path));
   const openRow = (row: Row) => attempt(() => rpc('open', { id: row.id }));
+  const openLatest = () => attempt(() => rpc('open_latest'));
   const openResult = () => attempt(() => rpc('open', { id: detail.value!.id }));
   const cancel = () => attempt(() => rpc('cancel'));
   const copyLogs = () => attempt(() => navigator.clipboard.writeText(logs.value.join('\n')));
@@ -128,14 +132,14 @@ export function useDesktop() {
     try {
       const disconnect = await connect((event, data) => {
         if (disposed) return;
-        if (event === 'state') { state.value = data; if (detail.value) detail.value = state.value.rows.find(r => r.id === detail.value?.id) || null; }
+        if (event === 'state') { state.value = data; selected.value = selected.value.filter(r => state.value.rows.some(row => row.id === r.id)); if (!state.value.rows.length) filter.value = 'all'; if (detail.value) detail.value = state.value.rows.find(r => r.id === detail.value?.id) || null; }
         if (event === 'activity') state.value.activity = data;
         if (event === 'progress') state.value.progress = data;
-        if (event === 'log') logs.value = [...logs.value.slice(-1999), `${new Date().toLocaleTimeString('zh-TW')}  ${data}`];
-        if (event === 'error') error.value = data;
+        if (event === 'log') logs.value = [...logs.value.slice(-1999), `${new Date().toLocaleTimeString(uiLanguage.value)}  ${data}`];
+        if (event === 'error') error.value = t(data);
       });
       if (disposed) { disconnect(); return; } off.push(disconnect);
-      if (!native) { error.value = '瀏覽器僅供版面預覽。請使用 Start_Auto7z.bat 處理本機文件。'; return; }
+      if (!native) { error.value = t('瀏覽器僅供版面預覽。請使用 Start_Auto7z.bat 處理本機文件。'); return; }
       const init = await rpc<{ settings: Settings; state: State; warning: string; tools: typeof tools }>('init');
       settings.value = init.settings; Object.assign(draft, init.settings); Object.assign(tools, init.tools); state.value = init.state; ready.value = true;
       await getCurrentWindow().setTheme(dark.value ? 'dark' : 'light'); if (init.warning) error.value = init.warning;
@@ -146,14 +150,14 @@ export function useDesktop() {
       off.push(await getCurrentWindow().onCloseRequested(async event => {
         if (state.value.busy || state.value.scanning) {
           event.preventDefault();
-          try { await ElMessageBox.confirm('取消目前工作後再關閉；已成功的結果會保留。', '工作仍在進行', { confirmButtonText: '取消工作', cancelButtonText: '繼續工作' }); await rpc('cancel'); } catch { /* retain work */ }
+          try { await ElMessageBox.confirm(t('取消目前工作後再關閉；已成功的結果會保留。'), t('工作仍在進行'), { confirmButtonText: t('取消工作'), cancelButtonText: t('繼續工作') }); await rpc('cancel'); } catch { /* retain work */ }
         } else if (page.value === 'settings' && dirty.value) {
           event.preventDefault();
-          try { await ElMessageBox.confirm('捨棄未儲存設定並關閉？', '關閉視窗', { confirmButtonText: '關閉', cancelButtonText: '繼續編輯' }); await getCurrentWindow().destroy(); } catch { /* retain draft */ }
+          try { await ElMessageBox.confirm(t('捨棄未儲存設定並關閉？'), t('關閉視窗'), { confirmButtonText: t('關閉'), cancelButtonText: t('繼續編輯') }); await getCurrentWindow().destroy(); } catch { /* retain draft */ }
         }
       }));
     } catch (e) { error.value = String(e); }
   });
   onUnmounted(() => { disposed = true; off.forEach(fn => fn()); window.removeEventListener('keydown', onKey); });
-  return { page, state, settings, draft, tools, ready, working, error, settingError, logs, mode, extension, engineMode, passwords, filter, selected, detail, help, dragging, checkedTools, dark, busy, candidatePasswords, statuses, statusTypes, shown, counts, done, retry, canStart, useBundled, dirty, name, size, attempt, navigate, pick, remove, reorder, requeue, start, changeMode, browse, checkTools, saveSettings, resetDraft, toggleTheme, openResult, cancel, copyLogs, copyPath, openRow };
+  return { page, state, settings, draft, tools, ready, working, error, settingError, logs, mode, extension, engineMode, passwords, filter, selected, detail, help, dragging, checkedTools, dark, busy, candidatePasswords, statuses, statusTypes, shown, counts, done, retry, canStart, useBundled, dirty, name, size, attempt, navigate, pick, remove, reorder, requeue, start, changeMode, browse, checkTools, saveSettings, resetDraft, toggleTheme, openResult, openLatest, cancel, copyLogs, copyPath, openRow };
 }

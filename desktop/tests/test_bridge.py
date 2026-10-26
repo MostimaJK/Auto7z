@@ -63,6 +63,94 @@ class BridgeTests(unittest.TestCase):
         self.assertEqual(self.bridge.total, 1)
         self.assertEqual(self.bridge.completed, 1)
 
+    def test_auto_clear_success_keeps_failed_rows_summary_and_openable_result(self):
+        good = self.archive('good.zip')
+        bad = self.path / 'broken.zip'; bad.write_bytes(b'broken')
+        self.add([good, bad])
+        self.run_batch(clear_success=True)
+        self.assertEqual([r['status'] for r in self.bridge.rows], ['failed'])
+        state = self.bridge.state()
+        self.assertEqual((state['completed'], state['total']), (2, 2))
+        self.assertEqual(state['batch_counts']['success'], 1)
+        self.assertEqual(state['batch_counts']['failed'], 1)
+        result = Path(state['latest_output'])
+        self.assertEqual((result / '文件.txt').read_text(), 'hello')
+        self.assertTrue(good.is_file())
+        with patch.object(bridge.os, 'startfile') as opened:
+            self.bridge.dispatch('open_latest', {})
+            opened.assert_called_once_with(result)
+        self.archive('broken.zip')
+        self.run_batch(clear_success=True)
+        self.assertEqual(self.bridge.rows, [])
+        self.assertTrue(result.is_dir())
+        self.assertNotEqual(self.bridge.latest_output, str(result))
+        self.add([good])
+        self.assertEqual(len(self.bridge.rows), 1)
+        self.assertEqual(self.bridge.rows[0]['status'], 'pending')
+
+    def test_latest_output_survives_failed_batch_and_clear_and_handles_missing_folder(self):
+        with self.assertRaisesRegex(ValueError, '尚無成功'):
+            self.bridge.dispatch('open_latest', {})
+        self.add([self.archive()]); self.run_batch(clear_success=True)
+        result = Path(self.bridge.latest_output)
+        bad = self.path / 'broken.zip'; bad.write_bytes(b'broken')
+        self.add([bad]); self.run_batch(clear_success=True)
+        self.bridge.dispatch('remove', {'ids': [r['id'] for r in self.bridge.rows]})
+        self.assertEqual(self.bridge.latest_output, str(result))
+        with patch.object(bridge.os, 'startfile') as opened:
+            self.bridge.dispatch('open_latest', {})
+            opened.assert_called_once_with(result)
+        result.rename(result.with_name('moved-result'))
+        with self.assertRaisesRegex(ValueError, '結果目錄不存在'):
+            self.bridge.dispatch('open_latest', {})
+
+    def test_rename_success_remains_in_queue(self):
+        self.add([self.archive('disguised.data')], True)
+        self.run_batch(mode='rename', extension='.zip', clear_success=True)
+        self.assertEqual(len(self.bridge.rows), 1)
+        self.assertEqual(self.bridge.rows[0]['status'], 'success')
+        self.assertEqual(self.bridge.latest_output, '')
+
+    def test_cleanup_and_language_settings_roundtrip_and_old_settings_migrate_safely(self):
+        old = bridge.Bridge.validate({'delete_after_extract': True})
+        self.assertFalse(old['delete_source_archive'])
+        self.assertEqual(old['language'], 'zh-TW')
+        for language in ['zh-CN', 'zh-TW', 'en']:
+            settings = {**self.bridge.settings, 'language': language, 'delete_source_archive': True, 'delete_after_extract': False}
+            self.bridge.dispatch('save', settings)
+            loaded = bridge.Bridge(lambda _: None, self.bridge.config)
+            self.assertEqual(loaded.settings['language'], language)
+            self.assertTrue(loaded.settings['delete_source_archive'])
+            self.assertFalse(loaded.settings['delete_after_extract'])
+        for invalid in [{'language': 'fr'}, {'delete_source_archive': 'true'}, {'delete_after_extract': 1}]:
+            with self.assertRaises(ValueError):
+                bridge.Bridge.validate(invalid)
+
+    def test_source_cleanup_runs_only_for_successful_extraction(self):
+        good = self.archive('clean.zip')
+        bad = self.path / 'broken.zip'; bad.write_bytes(b'broken')
+        self.bridge.settings['delete_source_archive'] = True
+        self.add([good, bad]); self.run_batch(clear_success=True)
+        self.assertFalse(good.exists())
+        self.assertTrue(bad.is_file())
+        self.assertEqual([r['status'] for r in self.bridge.rows], ['failed'])
+        self.assertTrue(Path(self.bridge.latest_output).is_dir())
+        self.assertEqual(self.bridge.batch_counts['success'], 1)
+
+    def test_auto_clear_on_cancel_keeps_unfinished_work_and_prior_output(self):
+        self.add([self.archive('one.zip'), self.archive('two.zip')])
+        process = bridge.Engine.process
+        def cancel_after_first(engine, *args, **kwargs):
+            result = process(engine, *args, **kwargs)
+            engine.cancel()
+            return result
+        # Simulated cancellation boundary, with a real first-file extraction.
+        with patch.object(bridge.Engine, 'process', cancel_after_first):
+            self.run_batch(clear_success=True)
+        self.assertEqual([r['status'] for r in self.bridge.rows], ['pending'])
+        self.assertEqual(Path(self.bridge.rows[0]['source']).name, 'two.zip')
+        self.assertTrue(Path(self.bridge.latest_output).is_dir())
+
     def test_queue_order_drives_real_execution_and_remove_preserves_files(self):
         self.add([self.archive('first.zip'), self.archive('second.zip'), self.archive('third.zip')])
         ids = [r['id'] for r in self.bridge.rows][::-1]

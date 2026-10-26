@@ -195,3 +195,7 @@ p { line-height: 1.6; }
   .page-heading { padding: 16px 20px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+.cleanup-settings .el-checkbox { display: flex; height: auto; min-height: 32px; white-space: normal; }
+.cleanup-settings .el-checkbox__label { white-space: normal; line-height: 1.5; }
+.cleanup-settings .field-note { margin: 4px 0 16px 24px; }

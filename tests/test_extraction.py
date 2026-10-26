@@ -34,6 +34,78 @@ class ExtractionTests(unittest.TestCase):
                 archive.writestr(key, value)
         return path
 
+    def test_cleanup_options_are_independent_and_preserve_other_files(self):
+        import io
+        inner = io.BytesIO()
+        with zipfile.ZipFile(inner, 'w') as z:
+            z.writestr('leaf.txt', 'keep result')
+        for delete_inner in (False, True):
+            for delete_source in (False, True):
+                source = self.archive(f'cleanup-{delete_inner}-{delete_source}.zip', {'nested.zip': inner.getvalue(), 'notes.txt': 'keep me'})
+                self.engine.delete_inner = delete_inner
+                self.engine.delete_source = delete_source
+                result = self.engine.process(source)
+                self.assertEqual(result.status, 'success', result.detail)
+                self.assertEqual(source.exists(), not delete_source)
+                self.assertEqual((Path(result.output) / 'nested.zip').exists(), not delete_inner)
+                self.assertEqual((Path(result.output) / 'nested/leaf.txt').read_text(), 'keep result')
+                self.assertEqual((Path(result.output) / 'notes.txt').read_text(), 'keep me')
+
+    def test_source_cleanup_retains_partial_failed_cancelled_and_changed_sources(self):
+        self.engine.delete_source = True
+        partial = self.archive('partial.zip', {'broken.zip': b'broken'})
+        self.assertEqual(self.engine.process(partial).status, 'partial')
+        self.assertTrue(partial.is_file())
+        bad = self.folder / 'bad.zip'; bad.write_bytes(b'broken')
+        self.assertEqual(self.engine.process(bad).status, 'failed')
+        self.assertTrue(bad.is_file())
+        source = self.archive('cancel.zip', {'leaf.txt': 'keep'})
+        extract = self.engine.extract
+        def cancel_after_extract(path):
+            output = extract(path); self.engine.cancel(); return output
+        with patch.object(self.engine, 'extract', cancel_after_extract):
+            result = self.engine.process(source)
+        self.assertEqual(result.status, 'cancelled')
+        self.assertTrue(source.is_file())
+        self.engine.cancelled.clear()
+        changed = self.archive('changed.zip', {'leaf.txt': 'keep'})
+        def change_after_extract(path):
+            output = extract(path)
+            with open(path, 'ab') as stream: stream.write(b'changed')
+            return output
+        with patch.object(self.engine, 'extract', change_after_extract):
+            result = self.engine.process(changed)
+        self.assertEqual(result.status, 'partial')
+        self.assertTrue(changed.is_file())
+        self.assertTrue(Path(result.output).is_dir())
+
+    def test_real_split_cleanup_and_restore_preserve_family_names(self):
+        payload = self.folder / 'payload.bin'; payload.write_bytes(os.urandom(4096))
+        packed = self.folder / 'split.7z'
+        subprocess.run([str(ROOT / 'tools/7zip/7z.exe'), 'a', '-v1k', str(packed), str(payload)], check=True, stdout=subprocess.DEVNULL)
+        volumes = sorted(self.folder.glob('split.7z.*'))
+        unrelated = self.folder / 'split.7z.other'; unrelated.write_text('keep')
+        self.engine.delete_source = True
+        result = self.engine.process(volumes[0], '.zip')
+        self.assertEqual(result.status, 'success', result.detail)
+        self.assertFalse(any(path.exists() for path in volumes))
+        self.assertEqual((Path(result.output) / payload.name).read_bytes(), payload.read_bytes())
+        self.assertEqual(unrelated.read_text(), 'keep')
+
+    def test_cleanup_rejects_incomplete_family_and_keeps_outputs_on_delete_failure(self):
+        source = self.archive('source.zip', {'leaf.txt': 'keep'})
+        self.engine.delete_source = True
+        with patch.object(self.engine, 'remove_archive', side_effect=PermissionError('locked')):
+            result = self.engine.process(source)
+        self.assertEqual(result.status, 'partial')
+        self.assertTrue(source.is_file())
+        self.assertEqual((Path(result.output) / 'leaf.txt').read_text(), 'keep')
+        one = self.folder / 'family.7z.001'; one.write_bytes(b'one')
+        three = self.folder / 'family.7z.003'; three.write_bytes(b'three')
+        with self.assertRaises(ValueError):
+            self.engine.archive_snapshot(one)
+        self.assertTrue(one.is_file() and three.is_file())
+
     def test_real_7z_reports_attempt_progress_without_inventing_completion(self):
         events = []
         self.engine.progress = events.append

@@ -94,8 +94,32 @@ def exercise_backend(app, folder):
         rpc('remove', dict(ids=ids)); state = idle_state()
         assert not state['rows'] and all(path.is_dir() for path in original_outputs)
         assert all(path.is_file() for path in [plain, encrypted, broken])
+        broken.write_bytes(b'broken again')
+        rpc('add', dict(paths=[str(plain), str(broken)])); idle_state()
+        rpc('start', dict(clear_success=True)); state = idle_state()
+        assert [row['status'] for row in state['rows']] == ['failed']
+        assert state['batch_counts']['success'] == 1 and state['batch_counts']['failed'] == 1
+        latest = Path(state['latest_output'])
+        assert (latest / 'inner/leaf.txt').read_text() == 'nested release verification'
+        with zipfile.ZipFile(broken, 'w') as archive: archive.writestr('fixed.txt', 'automatic clear retry')
+        rpc('start', dict(clear_success=True)); state = idle_state()
+        assert not state['rows'] and state['batch_counts']['success'] == 1
+        assert (Path(state['latest_output']) / 'fixed.txt').read_text() == 'automatic clear retry'
+        assert latest.is_dir() and plain.is_file() and broken.is_file()
+        saved = rpc('save', dict(init['settings'], path_7z=str(resources / '7z.exe'), path_rar='',
+                                 language='en', delete_after_extract=True, delete_source_archive=True))
+        assert saved['language'] == 'en' and saved['delete_source_archive']
+        rpc('add', dict(paths=[str(plain)])); idle_state()
+        rpc('start', dict(clear_success=True)); state = idle_state()
+        assert not state['rows'] and state['batch_counts']['success'] == 1
+        cleaned_output = Path(state['latest_output'])
+        assert (cleaned_output / 'inner/leaf.txt').read_text() == 'nested release verification'
+        assert not (cleaned_output / 'inner.zip').exists() and not plain.exists()
+        assert latest.is_dir() and broken.is_file()
         return dict(batch_success=2, expected_failure=1, retry_success=1, nested_content=True,
-                    multi_password=True, queue_reorder=True, explicit_requeue=True, clear_preserves_files=True)
+                    multi_password=True, queue_reorder=True, explicit_requeue=True, clear_preserves_files=True,
+                    automatic_success_clear=True, latest_output_after_clear=True,
+                    cleanup_settings=True, language_setting=True)
     finally:
         process.stdin.close()
         try: process.wait(timeout=10)

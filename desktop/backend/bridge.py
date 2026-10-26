@@ -45,7 +45,7 @@ def own_process_job():
 
 DEFAULTS = dict(path_7z="", path_rar="", max_recursion_depth=20,
                 idle_timeout_seconds=0, timeout_7z_precheck=30,
-                delete_after_extract=False, theme="system")
+                delete_after_extract=False, delete_source_archive=False, language="zh-TW", theme="system")
 
 
 class Bridge:
@@ -77,6 +77,8 @@ class Bridge:
         self.current = None
         self.stopping = False
         self.progress = None
+        self.latest_output = ""
+        self.batch_counts = None
         self.scan_cancel = threading.Event()
 
     @staticmethod
@@ -96,6 +98,12 @@ class Bridge:
         if type(data.get("delete_after_extract", False)) is not bool:
             raise ValueError("內層刪除選項無效")
         out["delete_after_extract"] = data.get("delete_after_extract", False)
+        if type(data.get("delete_source_archive", False)) is not bool:
+            raise ValueError("來源刪除選項無效")
+        out["delete_source_archive"] = data.get("delete_source_archive", False)
+        out["language"] = data.get("language", "zh-TW")
+        if out["language"] not in ("zh-CN", "zh-TW", "en"):
+            raise ValueError("語言無效")
         out["theme"] = data.get("theme", "system")
         if out["theme"] not in ("system", "light", "dark"):
             raise ValueError("主題無效")
@@ -105,7 +113,8 @@ class Bridge:
         with self.lock:
             return dict(rows=[dict(r) for r in self.rows], busy=self.busy, scanning=self.scanning,
                         activity=self.activity, current=self.current, stopping=self.stopping,
-                        completed=self.completed, total=self.total, progress=self.progress)
+                        completed=self.completed, total=self.total, progress=self.progress,
+                        latest_output=self.latest_output, batch_counts=self.batch_counts)
 
     def publish(self):
         self.emit(dict(event="state", data=self.state()))
@@ -200,7 +209,7 @@ class Bridge:
                 if not p.is_symlink():
                     yield p
 
-    def start(self, mode="extract", extension="", passwords=None, engine_mode="auto"):
+    def start(self, mode="extract", extension="", passwords=None, engine_mode="auto", clear_success=False):
         self.idle()
         if mode not in ("extract", "rename", "restore") or engine_mode not in ("auto", "7z", "winrar"):
             raise ValueError("處理方式或引擎無效")
@@ -208,17 +217,21 @@ class Bridge:
             raise ValueError("後綴須以點開頭，每段限 1–12 個英數字，最多三段（例如 .zip、.tar.gz）")
         if not isinstance(passwords or [], list) or any(not isinstance(p, str) for p in (passwords or [])):
             raise ValueError("密碼格式無效")
+        if not isinstance(clear_success, bool):
+            raise ValueError("清理選項必須是布林值")
         sources = [r for r in self.rows if r["status"] != "success"]
         if not sources:
             raise ValueError("沒有待處理文件")
         s = self.settings.copy()
         self.engine = Engine(s["path_7z"], s["path_rar"], passwords or [], engine_mode,
                              s["max_recursion_depth"], s["delete_after_extract"],
-                             s["idle_timeout_seconds"], s["timeout_7z_precheck"], self.notify, self.report_progress)
+                             s["idle_timeout_seconds"], s["timeout_7z_precheck"], self.notify, self.report_progress,
+                             delete_source=s["delete_source_archive"])
         if mode != "rename" and not self.engine._tool_order(Path(sources[0]["source"])):
             raise ValueError("找不到可用解壓引擎，請在設定中指定工具路徑")
         self.busy, self.stopping = True, False
         self.progress = None
+        self.batch_counts = None
         self.completed, self.total = 0, len(sources)
         self.publish()
         def run():
@@ -253,6 +266,8 @@ class Bridge:
                         if not result["output"] and row["output"]:
                             result["output"] = row["output"]
                         row.update(result)
+                        if mode != "rename" and row["status"] == "success" and row["output"]:
+                            self.latest_output = row["output"]
                         self.completed += 1
                     self.log(f"{row['status']} · {row['source']}\n{row['output']}\n{row['detail']}")
                     self.publish()
@@ -269,6 +284,11 @@ class Bridge:
                     self.busy = self.stopping = False
                     self.current = None
                     self.activity = "已取消；成功結果保留" if self.engine.cancelled.is_set() else "處理完成"
+                    self.batch_counts = {status: sum(r["status"] == status for r in sources)
+                                         for status in ("success", "partial", "failed", "cancelled")}
+                    if clear_success and mode != "rename":
+                        successful = {r["id"] for r in sources if r["status"] == "success"}
+                        self.rows = [r for r in self.rows if r["id"] not in successful]
                 self.publish()
         self.thread = threading.Thread(target=run)
         self.thread.start()
@@ -335,6 +355,13 @@ class Bridge:
                     Path(name).unlink()
             self.settings = data
             return data
+        elif op == "open_latest":
+            if not self.latest_output:
+                raise ValueError("尚無成功解壓的結果目錄")
+            path = Path(self.latest_output)
+            if not path.is_dir():
+                raise ValueError(f"結果目錄不存在：{path}")
+            os.startfile(path)
         elif op == "open":
             row = next(r for r in self.rows if r["id"] == args["id"])
             path = Path(row["output"]) if row["output"] else Path(row["archive"] or row["source"]).parent
