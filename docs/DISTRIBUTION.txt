@@ -22,3 +22,7 @@ Traditional Chinese and English, with a saved language preference.
 Archive cleanup has separate nested/source switches. Source deletion is off
 by default and only runs after complete extraction success. Clearing the
 queue does not delete files; Open folder opens the latest successful output.
+
+License: Auto7z project-owned code is MIT-licensed (resources/LICENSE).
+Third-party components retain their own licenses; see
+resources/THIRD_PARTY_NOTICES.md and resources/licenses.

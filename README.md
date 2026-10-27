@@ -78,4 +78,4 @@ python scripts/verify_release.py
 
 ## 授權
 
-本專案採GNU GPL v3，見 [LICENSE](LICENSE)。第三方聲明見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 與發行包內 resources/licenses。7-Zip使用原版二進位；WinRAR不隨包分發。已知系統要求、變更及限制見 [更新紀錄](CHANGELOG.md)。
+本專案自2026-10-27起，當前版本中由JackyNgai擁有著作權的程式碼採MIT授權，允許商業使用、修改與再分發，見 [LICENSE](LICENSE)。此前已依GPL-3.0發布的副本仍可按原授權使用；第三方元件不隨本次變更改為MIT。授權範圍及檢查記錄見 [授權檢查](docs/LICENSE_REVIEW.md)。第三方聲明見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 與發行包內 resources/licenses。7-Zip使用原版二進位；WinRAR不隨包分發。已知系統要求、變更及限制見 [更新紀錄](CHANGELOG.md)。
